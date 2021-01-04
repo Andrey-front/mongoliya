@@ -1,0 +1,57 @@
+.footer-bottom {
+  padding-top: 40px;
+  padding-bottom: 30px;
+  
+
+  &__list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-left: 0;
+    list-style: none;
+    margin-left: -5px;
+    text-decoration: none;
+    
+    li {
+      margin-bottom: 5px;
+      color: white;
+      a{
+        color: inherit;
+      }
+    }
+  }
+
+
+  &__editor {
+    background: url('../image/maximus.png') no-repeat right center;
+
+    a {
+      padding-right: 90px;
+
+    }
+  }
+
+  &__owner {
+    margin: 0 20px 0 50px;
+  }
+
+}
+
+@media (min-width: 320px) {}
+
+@media (min-width: 768px) {}
+
+@media (min-width: 992px) {
+  .footer-bottom {
+    &__list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+
+      li {}
+    }
+  }
+
+}
+
+@media (min-width: 1200px) {}

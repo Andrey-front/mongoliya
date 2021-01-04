@@ -1,0 +1,16 @@
+.category-popular {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 320px) {
+  .category-popular {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 992px) {
+  .category-popular {
+    justify-content: space-evenly;
+  }
+}

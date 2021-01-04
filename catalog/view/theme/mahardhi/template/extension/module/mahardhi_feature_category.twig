@@ -1,0 +1,30 @@
+<div class="container">
+	<div class="category-featured clearfix">
+		<div class="page-title"><h3>{{ heading_title }}</h3></div>
+		<div class="category-box">
+			<div class="row">
+				<div class="category-feature-list">
+					{% set categoryCount = categories|length %}
+					<div class="category-popular">						
+						{% for category in categories %}
+						<div class="category-popular__item ">
+							<div class="category-thumb">
+								<div class="images-hover image">
+									<a href="{{ category.href }}">
+										<img src="{{ category.thumb }}" alt="{{ category.name }}" title="{{ category.name }}" class="img-responsive" />
+									</a>
+								</div>
+								<div class="caption">
+									<div class="cat-title">
+										<a href="{{ category.href }}">{{ category.name }}</a>
+									</div>
+							  </div> 
+							</div>
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

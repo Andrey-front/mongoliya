@@ -1,0 +1,25 @@
+.htaccess
+/config.php
+admin/config.php
+error.log
+!index.html
+
+node_modules
+image
+catalog/view/theme/mahardhi/stylesheet
+catalog/view/javascript
+
+download/
+image/data/
+image/cache/
+system/cache/
+system/logs/
+
+system/storage/
+
+# vQmod log files
+vqmod/logs/*
+# vQmod cache files
+vqmod/vqcache/*
+vqmod/checked.cache
+vqmod/mods.cache

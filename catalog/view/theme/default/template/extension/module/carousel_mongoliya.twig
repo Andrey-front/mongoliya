@@ -1,0 +1,19 @@
+<div class="carousel-mongoliya slideshow">
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+		{% for banner in banners %}
+			<div class="carousel-mongoliya__item swiper-slide">
+				<div class="carousel-mongoliya__wrap"
+				style="background-image: url(/image/catalog/carousel_mongoliya/{{banner.photo}});">
+					<div class="carousel-mongoliya__inner">
+						<p class="carousel-mongoliya__caption">{{banner.caption}}</p>
+						<p class="carousel-mongoliya__text">{{banner.msg}}</p>
+						<a href="{{banner.link}})" class="btn btn-default">{{banner.link_text}}</a>
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+		</div>
+		<div class="swiper-pagination slideshow-mongoliya"></div>
+	</div>
+</div>

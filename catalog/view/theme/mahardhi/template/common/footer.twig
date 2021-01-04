@@ -1,0 +1,74 @@
+<footer class="footer">
+	<div class="footer-top">
+		<div class="container">
+			{{ footer_top }}
+			<div class="row footer-middle">
+				<div class="col-sm-4">
+					<ul class="footer-info">
+						<li>
+							<a href="{{ home }}" class="footer__logo">
+								<img src="/image/catalog/logo-footer.png" 
+									title="{{ name }}" 
+									alt="{{ name }}" 
+									class="img-responsive">
+							</a>
+						</li>
+						<li class="footer__phone">{{telephone}}</li>
+						<li class="footer__email">
+							<a href="mailto:{{email}}">{{email}}</a>
+						</li>
+					</ul>
+				</div>
+				<div class="col-sm-2">
+					<h5 class="footer__caption">Категории</h5>
+					<ul class="list-unstyled">
+					{% for category in categories %}
+						<li>
+							<a href="{{ category.href }}">{{ category.name }}</a>
+						</li>
+					{% endfor %}
+					</ul>
+				</div>
+				{% if informations %}
+					<div class="col-sm-3">
+						<h5 class="footer__caption">{{ text_information }}</h5>
+						<ul class="list-unstyled">
+							{% for information in informations %}
+								<li><a href="{{ information.href }}">{{ information.title }}</a></li>
+								{% endfor %}
+								<li><a href="/articles">Полезные статьи</a></li>
+						</ul>
+					</div>
+					{% endif %}
+					<div class="col-sm-3">
+						<h5 class="footer__caption">Контакты</h5>
+						<ul class="footer-contacts list-unstyled">
+							<li><span class="footer__bold">Адрес:</span> {{address}}</li>
+							<li><span class="footer__bold">E-mail:</span> <a href="mailto:{{email}}">{{email}}</a></li>
+							<li><span class="footer__bold">Адрес в Москве: </span> {{address_moscow}}</li>
+						</ul>
+					</div>
+			</div>
+		</div>
+	</div>
+	<div class="footer-bottom clearfix">
+		<div class="container">	
+			<ul class="footer-bottom__list text-center">
+				<li class="footer-bottom__editor">
+					<a href="https://maximusmedia.pro/" target="_blank">Разработка и продвижение:</a>
+				</li>
+				<li class="footer-bottom__owner">Allmongolia.ru {{ 'now' | date('Y') }}</li>
+				<li>
+					<a href="/privacy">Политика конфиденциальности</a>
+				</li>
+			</ul>
+		</div>	
+	</div>
+	{% for script in scripts %}
+		<script src="{{ script }}"></script>
+	{% endfor %}
+</footer>
+<!-- top scroll -->
+	<a href="#" class="scrollToTop back-to-top icon-up-arrow" data-toggle="tooltip" title="{{ text_backtop }}"></a>
+</body>
+</html>

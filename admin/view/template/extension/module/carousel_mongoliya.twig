@@ -1,0 +1,174 @@
+{{ header }}{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<button type="submit" form="form-banner" data-toggle="tooltip" title="{{ button_save }}"
+								class="btn btn-primary"><i class="fa fa-save"></i>
+				</button>
+				<a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default">
+					<i class="fa fa-reply"></i></a>
+            </div>
+				<h1>{{ heading_title }}</h1>
+				<ul class="breadcrumb">
+					{% for breadcrumb in breadcrumbs %}
+					<li><a href="{{ breadcrumb['href'] }}">{{ breadcrumb['text'] }}</a></li>
+					{% endfor %}
+				</ul>
+			</div>
+		</div>
+		<div class="container-fluid">
+			{% if(failure) %}
+			<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ failure }}
+				<button type="button" class="close" data-dismiss="alert">&times;</button>
+			</div>
+			{% endif %}
+			{% if(success) %}
+			<div class="alert alert-success"><i class="fa fa-exclamation-circle"></i> {{ success }}
+				<button type="button" class="close" data-dismiss="alert">&times;</button>
+			</div>
+			{% endif %}
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_edit }}</h3>
+				</div>
+				<div class="panel-body">
+				<form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-hok-sharing"
+                      class="form-horizontal">
+					<div class="form-group">
+						<label class="col-sm-2 control-label" for="input-status">Статус</label>
+						<div class="col-sm-10">
+							<select name="status" id="input-status" class="form-control">
+									<option value="1" {{ (status == "1") ? "selected" : "" }}>{{ text_enabled }}</option>
+									<option value="0" {{ (status == "0") ? "selected" : "" }}>{{ text_disabled }}</option>
+							</select>
+						</div>
+					</div>
+					<div class="form-group required">
+						<label class="col-sm-2 control-label" for="input-name">{{ entry_name }}</label>
+						<div class="col-sm-10">
+							<input type="text" name="name" value="{{ name }}" placeholder="{{ entry_name }}" id="input-name" class="form-control" />
+							{% if(error_name) %}
+							<div class="text-danger">{{ error_name }}</div>
+							{% endif %}
+						</div>
+					</div>
+				</form>
+			</div>
+
+			 <div class="row">
+			 	<div class="alert alert-dismissible fade in" role="alert" id="result">
+						<button type="button" class="close alert-close" aria-label="Close">
+							<span aria-hidden="true">×</span>
+						</button>
+						<strong></strong>
+					</div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-list"></i> Список баннеров</h3>
+						<div class="pull-right">
+						<a href="{{ action_add }}" 
+						data-toggle="tooltip" class="btn btn-primary" data-original-title="Добавить"><i class="fa fa-plus"></i></a>
+						</div>
+          </div>
+          <div class="panel-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <td class="text-left">Фото</td>
+                      <td class="text-left">Заголовок</td>
+                      <td class="text-left">Текст</td>
+                      <td class="text-left">Ссылка</td>
+											<td class="text-left">Текст ссылки</td>
+                      <td class="text-center">Удалить</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+
+                  {% if banners %}
+                  {% for banner in banners %}
+                  <tr>
+                    <td class="text-left">
+										{% if banner.photo %}
+											<img src="/image/catalog/carousel_mongoliya/{{banner.photo}}" width="200px"
+											alt="photo" class="img-responsive">
+										{% endif %}
+										</td>
+                    <td class="text-left">
+											<a href="{{edit}}&id={{banner.id }}">{{ banner.caption }}</a>
+										</td>
+                    <td class="text-left">{{ banner.msg }}</td>
+                    <td class="text-left">{{ banner.link }}</td>
+										<td class="text-left">{{ banner.link_text }}</td>
+                    <td class="text-center">
+											<i class="fa fa-trash text-danger remove-banner" title="удалить" 
+												role="button" data-id="{{ banner.id }}" aria-hidden="true"></i>
+									</td>
+                  </tr>
+                  {% endfor %}
+                  {% else %}
+                  <tr>
+                    <td class="text-center" colspan="7">Нет ни одного баннера</td>
+                  </tr>
+                  {% endif %}
+                    </tbody>
+                </table>
+              </div>
+            </form>
+          </div>
+        </div>
+
+    </div>
+		</div>
+	</div>
+</div>
+<script>
+$.ajaxSetup({
+		dataType: "json",
+		method: "POST",
+});
+
+$('.remove-banner').on('click', function() {
+	const data = {
+		id: +$(this).data('id')
+	};
+	
+	if(data['id']){
+		$.ajax({
+			url: 'index.php?route=extension/module/carousel_mongoliya/delete&user_token={{ user_token }}',
+			data,
+		}).done((res) =>{
+		
+			if (res === true) {
+				resultOutput('Баннер удален', 'success');
+				$(this).closest('tr').remove();
+			} else {
+				resultOutput('Произошла ошибка. Попробуйте еще раз', 'warning');
+			}
+
+			$('#list_tags').find('tbody').find('tr')
+				.prop("disabled", false);
+		});
+		
+	}
+
+});
+
+function resultOutput(msg, type) {
+	const result = $('#result');
+
+	result.show()
+		.addClass(`alert-${type}`)
+		.find('strong').text(msg);
+
+	setTimeout(() => {
+		result.hide()
+			.removeClass(function (index, className) {
+				return (className.match(/(^|\s)alert-\S+/g) || []).join(' ');
+			})
+			.find('strong').text('');
+	}, 5000);
+}
+</script>
+{{ footer }}

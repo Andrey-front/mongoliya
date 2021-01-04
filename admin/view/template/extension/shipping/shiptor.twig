@@ -1,0 +1,1185 @@
+{{ header }}{{ column_left }}
+<div id="content">
+	<div class="page-header">
+		<div class="container-fluid">
+			<div class="pull-right">
+				<!--<a href="{{ customer }}" class="btn btn-default">{{ text_order_customer }}</a> -->
+				<a href="{{ order }}" class="btn btn-default">{{ text_order_store }}</a> 
+				<a href="{{ shiptor }}" class="btn btn-default">{{ text_order_shiptor }}</a>			
+				<a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i class="fa fa-reply"></i></a>
+				{% if button_save %}
+				<button type="submit" form="form-shiptor" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa fa-save"></i></button>
+				{% endif %}
+			</div>
+
+			<ul class="breadcrumb">
+				{% for breadcrumb in breadcrumbs %}
+					{% if breadcrumb.separator %}
+						<li>{{ breadcrum.separator }}</li>
+					{% endif %}
+					<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+	
+	<div class="container-fluid">
+		{% if success %}
+			<div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success }}
+				<button type="button" class="close" data-dismiss="alert">&times;</button>
+			</div>
+		{% endif %}		
+		{% if error %}
+			<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error }}
+				<button type="button" class="close" data-dismiss="alert">&times;</button>
+			</div>
+		{% endif %}		
+	 
+		<link href="view/javascript/shipping/shiptor/shiptor.css" rel="stylesheet" />
+		<link href="view/javascript/shipping/shiptor/datetimepicker/bootstrap-datetimepicker.min.css" rel="stylesheet" />
+
+		<script src="view/javascript/shipping/shiptor/datetimepicker/moment.min.js"></script>	
+		<script src="view/javascript/shipping/shiptor/datetimepicker/ru.min.js"></script>
+		<script src="view/javascript/shipping/shiptor/datetimepicker/bootstrap-datetimepicker.min.js"></script>
+		
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-shiptor" class="form-horizontal">
+			       {% if shipping_methods %}
+				       <ul class="nav nav-tabs">
+					       <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a></li>
+					       <li><a href="#tab-delivery" data-toggle="tab">{{ tab_delivery }}</a></li>
+					       <li><a href="#tab-setting" data-toggle="tab">{{ tab_setting }}</a></li>
+				       </ul>
+
+				       <div class="tab-content">
+
+					       <!-- методы доставки -->
+
+					       <div class="tab-pane active" id="tab-general">
+							<div style="float: right;">
+								<a href="https://shiptor.ru/help/integration/opencart/opencart-setting#article_2" target="_blank">{{ text_faq }}</a>
+							</div>
+						       <div class="col-sm-2">
+							       <ul class="nav nav-pills nav-stacked">
+							      {% for j,shipping in shipping_methods %}	
+									{% if j == 0 %}
+									<h4><span class="fa fa-tags icon-tags"></span>Прямая регион-регион</h4>
+									{% else %}
+									<h4><span class="fa fa-tags icon-tags"></span>От склада Shiptor в г.Москва</h4>
+									{% endif %}
+							       {% for key,shipping_method in shipping %}
+									<li data-id="{{ shipping_method.id }}" class="{% if not key %} {%if j == 1 %} active{% endif %}{% endif %} {% if attribute(_context, 'shipping_status_' ~ shipping_method.id) %}status-on{% else %}status-off{% endif %}"><a href="#tab-{{ shipping_method.id }}" data-toggle="tab">
+									{{ shipping_method.name }}<br>
+									<small><i>{{ shipping_method.group }}</i></small>
+									</a>
+									</li>
+								{% endfor %}
+								{% endfor %}
+							       </ul>
+						       </div>
+
+						       <div class="col-sm-10">
+							       <div class="tab-content">		
+								{% for j,shipping in shipping_methods %}								
+							       {% for key,shipping_method in shipping %}
+								       <div class="tab-pane{% if not key %} {% if j == 1 %} active{% endif %}{% endif %}" id="tab-{{ shipping_method.id }}">
+										
+									       <h3>{{ shipping_method.name }}</h3>
+
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_shipping_status }}</label>
+											       <div class="col-sm-3">
+												       <div class="onoffswitch">
+													       {% if attribute(_context, 'shipping_status_' ~ shipping_method.id) %}
+														       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_status" id="{{ shipping_method.id }}_status" data-id="{{ shipping_method.id }}" data-name="status" value="1" class="onoffswitch-checkbox" checked="checked" />
+													       {% else %}
+														       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_status" id="{{ shipping_method.id }}_status" data-id="{{ shipping_method.id }}" data-name="status" value="1" class="onoffswitch-checkbox" />
+													       {% endif %}
+														<label class="onoffswitch-label" for="{{ shipping_method.id }}_status"></label>
+												       </div>
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_shipping_status }}</div>
+											       </div>
+										       </div>
+									       </div>
+										   <div class="form-group">
+											<div class="sh-flex">
+												<label class="col-sm-2 control-label">{{ entry_shipping_name }}</label>
+												<div class="col-sm-3">
+													<input name="shipping_shiptor_{{ shipping_method.id }}_name" value="{{ attribute(_context, 'shipping_name_' ~ shipping_method.id) }}" class="form-control" />
+												</div>
+												<div class="col-sm-7">
+												</div>
+											</div>
+										</div>
+									       {% if shipping_method.courier == 'shiptor-one-day' %}
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_shipping_time }}</label>
+											       <div class="col-sm-3">
+												       <div class="input-group" id="datetimepicker">
+													       <input type="text" name="shipping_shiptor_{{ shipping_method.id }}_time" value="{{ attribute(_context, 'shipping_time_' ~ shipping_method.id) }}" class="form-control" />
+													       <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-clock-o"></i></button></span>
+												       </div>
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_shipping_time }}</div>
+											       </div>
+										       </div>
+									       </div>
+									       {% endif %}
+										   
+										{% if shipping_method.category == 'delivery-point-to-door' 
+										or shipping_method.category == 'delivery-point-to-delivery-point' %}
+										<div class="form-group">
+											<div class="sh-flex">
+												<label class="col-sm-2 control-label">{{ entry_pvz }}</label>
+												<div class="col-sm-3">
+												{% if shipping_method.category == 'delivery-point-to-delivery-point' %}
+													<select disabled name="shipping_shiptor_{{ shipping_method.id }}_pvz" class="form-control">
+													{% for pvz in attribute(_context, 'array_pvz_' ~ shipping_method.id) %}
+														{% if attribute(_context, 'shipping_pvz_' ~ shipping_method.id) == pvz.id %}
+															<option value="{{ pvz.id }}" selected="selected">{{ pvz.address }}</option>
+														 {% else %}
+															<option value="{{ pvz.id }}">{{ pvz.address }}</option>
+														 {% endif %}
+														 {% endfor %}
+													</select>
+												{% else %}
+													<select name="shipping_shiptor_{{ shipping_method.id }}_pvz" class="form-control">
+													{% for pvz in attribute(_context, 'array_pvz_' ~ shipping_method.id) %}
+														{% if attribute(_context, 'shipping_pvz_' ~ shipping_method.id) == pvz.id %}
+															<option value="{{ pvz.id }}" selected="selected">{{ pvz.address }}</option>
+														 {% else %}
+															<option value="{{ pvz.id }}">{{ pvz.address }}</option>
+														 {% endif %}
+														 {% endfor %}
+													</select>
+												{% endif %}
+												</div>
+											</div>											
+										</div>
+										 {% endif %}
+									       
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_total_free }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_total_free" value="{{ attribute(_context, 'shipping_total_free_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_total_free }}</div>
+											       </div>
+										       </div>		
+									       </div>		
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_total_min }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_total_min" value="{{ attribute(_context, 'shipping_total_min_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_total_min }}</div>
+											       </div>
+										       </div>		
+									       </div>	
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_total_max }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_total_max" value="{{ attribute(_context, 'shipping_total_max_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_total_max }}</div>
+											       </div>
+										       </div>		
+									       </div>								
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_total_min_weight }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_total_min_weight" value="{{ attribute(_context, 'shipping_total_min_weight_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_total_min_weight }}</div>
+											       </div>
+										       </div>		
+									       </div>	
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_total_max_weight }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_total_max_weight" value="{{ attribute(_context, 'shipping_total_max_weight_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_total_max_weight }}</div>
+											       </div>
+										       </div>		
+									       </div>	
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_fixed }}</label>
+											       <div class="col-sm-3">
+												       <input name="shipping_shiptor_{{ shipping_method.id }}_fixed" value="{{ attribute(_context, 'shipping_fixed_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_fixed }}</div>
+											       </div>
+										       </div>	
+									       </div>
+										   <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_weight_price }}</label>
+											       <div class="col-sm-3">
+												       <textarea name="shipping_shiptor_{{ shipping_method.id }}_weight_price" class="form-control">{{ attribute(_context, 'shipping_weight_price_' ~ shipping_method.id) }}</textarea>
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_weight_price }}</div>
+											       </div>
+										       </div>
+									       </div>
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_type }}</label>
+											       <div class="col-sm-3">
+												       <select name="shipping_shiptor_{{ shipping_method.id }}_type" class="form-control">
+													       <option value="0">{{ text_select }}</option>
+													       {% if attribute(_context, 'shipping_type_' ~ shipping_method.id) == 'P' %} 
+														       <option value="P" selected="selected">{{ text_percent }}</option>
+													       {% else %}
+														       <option value="P">{{ text_percent }}</option>
+													       {% endif %}
+													       {% if attribute(_context, 'shipping_type_' ~ shipping_method.id) == 'F' %}
+														       <option value="F" selected="selected">{{ text_amount }}</option>
+													       {% else %}
+														       <option value="F">{{ text_amount }}</option>
+													       {% endif %}
+												       </select>
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_type }}</div>
+											       </div>
+										       </div>											
+									       </div>													
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_markup }}</label>
+											       <div class="col-sm-3">
+												       <input type="text" name="shipping_shiptor_{{ shipping_method.id }}_markup" value="{{ attribute(_context, 'shipping_markup_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_markup }}</div>
+											       </div>
+										       </div>
+									       </div>
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_comment }}</label>
+											       <div class="col-sm-3">
+												       <div class="onoffswitch">
+													       {% if attribute(_context, 'shipping_comment_' ~ shipping_method.id) %}
+														       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_comment" id="{{ shipping_method.id }}_comment" value="1" class="onoffswitch-checkbox" checked="checked" />
+													       {% else %}
+														       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_comment" id="{{ shipping_method.id }}_comment" value="1" class="onoffswitch-checkbox" />
+													       {% endif %}
+														<label class="onoffswitch-label comment-change" for="{{ shipping_method.id }}_comment"></label>
+												       </div>
+
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_comment }}</div>
+											       </div>
+										       </div>
+									       </div>
+									       <div class="form-group my-comment">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_my_comment }}</label>
+											       <div class="col-sm-3">
+												       <input type="text" name="shipping_shiptor_{{ shipping_method.id }}_my_comment" value="{{ attribute(_context, 'shipping_my_comment_' ~ shipping_method.id) }}" class="form-control" />
+											       </div>
+											       <div class="col-sm-7">
+												       <div class="sh-help">{{ help_my_comment }}</div>
+											       </div>
+										       </div>	
+									       </div>							
+									       <div class="form-group">
+										       <div class="sh-flex">
+											       <label class="col-sm-2 control-label">{{ entry_sort_order }}</label>										
+											       <div class="col-sm-3">
+												       <input type="text" name="shipping_shiptor_{{ shipping_method.id }}_sort_order" value="{{ attribute(_context, 'shipping_sort_order_' ~ shipping_method.id) }}" class="form-control" />									
+											       </div>
+												<div class="col-sm-7">
+												</div>
+										       </div>
+									       </div>
+											
+										{% if regions %}
+											<div class="form-group">
+												<div class="col-sm-2">
+													<ul class="nav nav-pills nav-stacked">
+													{% for i, region in regions %}
+														<li {% if i == 0 %}class="active"{% endif %}><a href="#tab-{{ shipping_method.id }}-region-{{ region.id }}" data-toggle="tab">{{ region.name }}</a></li>
+													{% endfor %}
+													</ul>
+												</div>
+										       <div class="col-sm-10">
+											       <div class="tab-content">
+												       {% for i, region in regions %}
+													       <div class="tab-pane{% if i == 0 %} active{% endif %}" id="tab-{{ shipping_method.id }}-region-{{ region.id }}">
+														       
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_total_free }}</label>
+																       <div class="col-sm-3">
+																	       <input name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_total_free" value="{{ attribute(_context, 'shipping_total_free_' ~ shipping_method.id ~ '_' ~ region.id) }}" class="form-control" />
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_total_free }}</div>
+																       </div>
+															       </div>		
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_total_min }}</label>
+																       <div class="col-sm-3">
+																	       <input name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_total_min" value="{{ attribute(_context, 'shipping_total_min_' ~ shipping_method.id ~ '_' ~ region.id) }}" class="form-control" />
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_total_min }}</div>
+																       </div>
+															       </div>		
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_total_max }}</label>
+																       <div class="col-sm-3">
+																	       <input name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_total_max" value="{{ attribute(_context, 'shipping_total_max_' ~ shipping_method.id ~ '_' ~ region.id) }}" class="form-control" />
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_total_max }}</div>
+																       </div>
+															       </div>		
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_fixed }}</label>
+																       <div class="col-sm-3">
+																	       <input name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_fixed" value="{{ attribute(_context, 'shipping_fixed_' ~ shipping_method.id ~ '_' ~ region.id) }}" class="form-control" />
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_fixed }}</div>
+																       </div>
+															       </div>	
+														       </div>
+															   <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_weight_price }}</label>
+																       <div class="col-sm-3">
+																	       <textarea name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_weight_price" class="form-control">{{ attribute(_context, 'shipping_weight_price_' ~ shipping_method.id ~ '_' ~ region.id) }}</textarea>
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_weight_price }}</div>
+																       </div>
+															       </div>
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_type }}</label>
+																       <div class="col-sm-3">
+																	       <select name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_type" class="form-control">
+																		       <option value="0">{{ text_select }}</option>
+																			   {% if attribute(_context, 'shipping_type_' ~ shipping_method.id ~ '_' ~ region.id) == 'P' %}
+																			       <option value="P" selected="selected">{{ text_percent }}</option>
+																		       {% else %}
+																			       <option value="P">{{ text_percent }}</option>
+																		       {% endif %}
+																		       {% if attribute(_context, 'shipping_type_' ~ shipping_method.id ~ '_' ~ region.id) == 'F' %}
+																			       <option value="F" selected="selected">{{ text_amount }}</option>
+																		       {% else %}
+																			       <option value="F">{{ text_amount }}</option>
+																		       {% endif %}
+																	       </select>
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_type }}</div>
+																       </div>
+															       </div>													
+														       </div>													
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_markup }}</label>
+																       <div class="col-sm-3">
+																	       <input type="text" name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_markup" value="{{ attribute(_context, 'shipping_markup_' ~ shipping_method.id ~ '_' ~ region.id) }}" class="form-control" />
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_markup }}</div>
+																       </div>
+															       </div>
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_region_status }}</label>
+																       <div class="col-sm-3">
+																	       <div class="onoffswitch">
+																		       {% if attribute(_context, 'shipping_status_' ~ shipping_method.id ~ '_' ~ region.id) %}
+																			       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_status" id="{{ shipping_method.id }}_{{ region.id }}_status" value="1" class="onoffswitch-checkbox" checked="checked" />
+																		       {% else %}
+																			       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_status" id="{{ shipping_method.id }}_{{ region.id }}_status" value="1" class="onoffswitch-checkbox" />
+																		       {% endif %}
+																			<label class="onoffswitch-label" for="{{ shipping_method.id }}_{{ region.id }}_status"></label>
+																	       </div>
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_region_status }}</div>
+																       </div>
+															       </div>
+														       </div>
+														       <div class="form-group">
+															       <div class="sh-flex">
+																       <label class="col-sm-2 control-label">{{ entry_region_hide }}</label>
+																       <div class="col-sm-3">
+																	       <div class="onoffswitch">
+																		       {% if attribute(_context, 'shipping_hide_' ~ shipping_method.id ~ '_' ~ region.id) %}
+																			       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_hide" id="{{ shipping_method.id }}_{{ region.id }}_hide" value="1" class="onoffswitch-checkbox" checked="checked" />
+																		       {% else %}
+																			       <input type="checkbox" name="shipping_shiptor_{{ shipping_method.id }}_{{ region.id }}_hide" id="{{ shipping_method.id }}_{{ region.id }}_hide" value="1" class="onoffswitch-checkbox" />
+																		       {% endif %}
+																			<label class="onoffswitch-label" for="{{ shipping_method.id }}_{{ region.id }}_hide"></label>
+																	       </div>
+																       </div>
+																       <div class="col-sm-7">
+																	       <div class="sh-help">{{ help_region_hide }}</div>
+																       </div>
+															       </div>
+														       </div>
+													       </div>
+												       {% endfor %}
+											       </div>
+										       </div>
+									       </div>
+										{% endif %}
+										
+								       </div><!-- / tab-general -->
+
+							   {% endfor %}		
+							{% endfor %}								   
+							       </div><!-- / tab-content -->
+						       </div>
+
+					       </div>
+
+					       <!-- /методы доставки -->
+
+					       <!-- параметры доставки -->
+
+					       <div class="tab-pane" id="tab-delivery">
+							<div style="float: right;">
+								<a href="https://shiptor.ru/help/integration/opencart/opencart-setting#article_1" target="_blank">{{ text_faq }}</a>
+							</div>
+						       <div class="form-group required">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_weight }}</label>
+								       <div class="col-sm-3">
+									       <input type="text" name="shipping_shiptor_weight" value="{{ shipping_shiptor_weight }}" class="form-control" />									
+									       {% if error_default_weight %}<span class="text-danger">{{ error_default_weight }}</span> {% endif %}
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_dimensions }}</div>
+								       </div>
+							       </div>
+						       </div>
+								<div class="form-group required">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label" for="input-size">{{ entry_size }}</label>
+									<div class="col-sm-3">
+									  <select name="shipping_shiptor_size" id="input-size" class="form-control">
+										{% if shipping_shiptor_size %}
+										<option value="1" selected="selected">{{ text_size_standart }}</option>
+										<option value="0">{{ text_size_auto }}</option>
+										 {% else %}
+										<option value="1">{{ text_size_standart }}</option>
+										<option value="0" selected="selected">{{ text_size_auto }}</option>
+										{% endif %}
+									  </select>
+									</div>
+									<div class="col-sm-7">
+										<div class="sh-help">Алгоритм вычисления итоговых измерений посылки</div>
+									</div>
+								</div>
+								</br>
+								<div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_default_dimensions }}</label>
+								       <div class="col-sm-3">
+									       <input type="text" name="shipping_shiptor_default_length" value="{{ shipping_shiptor_default_length }}" class="form-control" style="width: 25%; display: inline;" />
+									       &nbsp;x&nbsp;
+									       <input type="text" name="shipping_shiptor_default_width" value="{{ shipping_shiptor_default_width }}" class="form-control" style="width: 25%; display: inline;" />
+									       &nbsp;x&nbsp;
+									       <input type="text" name="shipping_shiptor_default_height" value="{{ shipping_shiptor_default_height }}" class="form-control" style="width: 25%; display: inline;" />
+									       {% if error_default_dimensions %}<span class="text-danger">{{ error_default_dimensions }}</span>{% endif %}
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_default_dimensions }}</div>
+								       </div>
+							       </div>
+							</div>
+							<div class="form-group">
+							</div>
+
+						       
+						       <input type="hidden" name="shipping_shiptor_weight_class_id" value="1">
+
+						       <div class="form-group">	
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_region }}</label>
+								       <div class="col-sm-3">
+									       <input type="text" name="shipping_shiptor_regions" value="" placeholder="Автодополнение" class="form-control" />
+									       <div id="shiptor-regions" class="well well-sm" style="height: 150px; overflow: auto;">
+									       {% for region in regions %}
+										       <div id="shiptor-regions{{ region.id }}"><i class="fa fa-minus-circle"></i> {{ region['name'] }}<input type="hidden" name="shipping_shiptor_regions[]" value="{{ region.id }}" /></div>
+									       {% endfor %}
+									       </div>
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_region }}</div>
+								       </div>
+							       </div>
+						       </div>
+						       <div class="form-group">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_days }}</label>
+									<div class="col-sm-3">								
+										<div class="onoffswitch">
+											{% if shipping_shiptor_days %}
+												<input type="checkbox" name="shipping_shiptor_days" id="days" value="1" class="onoffswitch-checkbox" checked="checked" />
+											{% else %}
+												<input type="checkbox" name="shipping_shiptor_days" id="days" value="1" class="onoffswitch-checkbox" />
+											{% endif %}
+											 <label class="onoffswitch-label" for="days"></label>
+										</div>
+									</div>
+									<div class="col-sm-7">
+										<div class="increase">
+										<label>
+										{{ help_increase_days }}
+										</label>
+										</div>
+										<input name="shipping_shiptor_increase_days" value="{{ shipping_shiptor_increase_days }}" class="form-control" style="width: 10%; display: inline;">
+									</div>
+								</div>
+							</div>
+						       <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_time }}</label>
+								       <div class="col-sm-3">
+									       <div class="onoffswitch">
+										       {% if shipping_shiptor_time %}
+											       <input type="checkbox" name="shipping_shiptor_time" id="time" value="1" class="onoffswitch-checkbox" checked="checked" />
+										       {% else %}
+											       <input type="checkbox" name="shipping_shiptor_time" id="time" value="1" class="onoffswitch-checkbox" />
+										       {% endif %}
+											<label class="onoffswitch-label" for="time"></label>
+									       </div>
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_time }}</div>
+								       </div>
+							       </div>
+						       </div>
+							   <div class="form-group required">
+								<div class="col-sm-3"></div>
+								<div class="col-sm-6">
+									<h3>{{ entry_setting_line_delivery }}</h3>
+								</div>
+								<div class="col-sm-3"></div>
+							</div>
+							<div class="form-group">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_city_delivery }}</label>
+									<div class="col-sm-3">
+										<input type="hidden" id="city-value" name="shipping_shiptor_city_delivery_value" value="{{ shipping_shiptor_city_delivery_value }}" class="form-control">
+										<input type="text" {% if not shipping_shiptor_city_delivery %} style="background:#CBC3C3;" {% endif %} name="shipping_shiptor_city_delivery" value="{{ shipping_shiptor_city_delivery }}" class="form-control">
+									</div>
+								</div>
+							</div>
+							<div class="form-group required">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_fio_delivery }}</label>
+									<div class="col-sm-3">
+										<input type="text" name="shipping_shiptor_fio_delivery" value="{{ shipping_shiptor_fio_delivery }}" class="form-control">
+									</div>
+								</div>
+							</div>
+							<div class="form-group required">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_address_delivery }}</label>
+									<div class="col-sm-3">
+										<input type="text" name="shipping_shiptor_address_delivery" value="{{ shipping_shiptor_address_delivery }}" class="form-control">
+									</div>
+								</div>
+							</div>
+							<div class="form-group required">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_telephone_delivery }}</label>
+									<div class="col-sm-3">
+										<input type="text" name="shipping_shiptor_telephone_delivery" value="{{ shipping_shiptor_telephone_delivery }}" class="form-control">
+									</div>
+								</div>
+							</div>
+							<div class="form-group required">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_email_delivery }}</label>
+									<div class="col-sm-3">
+										<input type="text" name="shipping_shiptor_email_delivery" value="{{ shipping_shiptor_email_delivery }}" class="form-control">
+									</div>
+								</div>
+							</div>
+							<div class="form-group">
+								<div class="sh-flex">
+									<label class="col-sm-2 control-label">{{ entry_setting_postponement_delivery }}</label>
+									<div class="col-sm-3">
+										 <select name="shipping_shiptor_postponement_delivery" id="input-postponement" class="form-control">
+											{% for post in postponement %}
+											 {% if post.value == shipping_shiptor_postponement_delivery %}
+											  <option value="{{ post.value }}" selected="selected">{{ post.day }}</option>
+											  {% else %}
+											  <option value="{{ post.value }}">{{ post.day }}</option>
+											 {% endif %}
+											{% endfor %}
+										  </select>
+									</div>
+								</div>
+							</div>
+					       </div>
+
+					       <!-- /параметры доставки -->
+
+
+					       <!-- настройки -->
+
+					       <div class="tab-pane" id="tab-setting">
+							<div style="float: right;">
+								<a href="https://shiptor.ru/help/integration/opencart/opencart-setting#article_0" target="_blank">{{ text_faq }}</a>
+							</div>
+						       <div class="form-group required">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_authorization }}</label>
+								       <div class="col-sm-3">
+									       <input type="text" name="shipping_shiptor_authorization" value="{{ shipping_shiptor_authorization }}" class="form-control" />									
+									       {% if error_authorization %}<span class="text-danger">{{ error_authorization }}</span>{% endif %}
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_authorization }}</div>
+								       </div>
+							       </div>
+						       </div>
+						       <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_logger }}</label>
+								       <div class="col-sm-3">							
+									       <div class="onoffswitch">
+										       {%if shipping_shiptor_logger %}
+											       <input type="checkbox" name="shipping_shiptor_logger" id="logger" value="1" class="onoffswitch-checkbox" checked="checked" />
+										       {% else %}
+											       <input type="checkbox" name="shipping_shiptor_logger" id="logger" value="1" class="onoffswitch-checkbox" />
+										        {% endif %}
+											<label class="onoffswitch-label" for="logger"></label>
+									       </div>
+								       </div>
+								       <div class="col-sm-7">
+									       <div class="sh-help">{{ help_logger }}</div>
+								       </div>
+							       </div>
+						       </div>
+						       <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_status }}</label>
+								       <div class="col-sm-3">
+									       <div class="onoffswitch">
+										       {%if shipping_shiptor_status %}
+											       <input type="checkbox" name="shipping_shiptor_status" id="status" value="1" class="onoffswitch-checkbox" checked="checked" />
+										       {% else %}
+											       <input type="checkbox" name="shipping_shiptor_status" id="status" value="1" class="onoffswitch-checkbox" />
+										       {% endif %}
+											<label class="onoffswitch-label" for="status"></label>
+									       </div>
+								       </div>
+									<div class="col-sm-7">
+									</div>
+							       </div>
+						       </div>
+						       <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-2 control-label">{{ entry_sort_order }}</label>
+								       <div class="col-sm-3">
+									       <input type="text" name="shipping_shiptor_sort_order" value="{{ shipping_shiptor_sort_order }}" class="form-control" />
+								       </div>
+									<div class="col-sm-7">
+									</div>
+							       </div>
+						       </div>
+							   <div class="form-group">
+								<div class="sh-flex">
+									<label class="col-sm-3 control-label" for="input-id-product">{{ entry_id_product }}</label>
+									<div class="col-sm-3">
+									  <select name="shipping_shiptor_id_product" id="input-id-product" class="form-control">
+										{%if shipping_shiptor_id_product %}
+										<option value="1" selected="selected">{{ text_article }}</option>
+										<option value="0">{{ text_model }}</option>
+										 {% else %}
+										<option value="1">{{ text_article }}</option>
+										<option value="0" selected="selected">{{ text_model }}</option>
+										{% endif %}
+									  </select>
+									</div>
+									<div class="col-sm-7">
+									</div>
+								</div>	
+							</div>
+							<div class="form-group">
+								<div class="sh-flex">
+									<label class="col-sm-3 control-label" for="input-export-product">{{ entry_export_product }}</label>
+									<div class="col-sm-3">
+									  <input type="button" class="btn btn-default" value="{{ button_export }}" onclick="exportProduct();" id="input-export-product">
+									</div>
+									<div class="col-sm-7">
+									<div id="error-product"></div>
+									<div id="success-product"></div>
+									<div class="sh-help">Только для НОВЫХ пользователей услуги фуллфилмент Shiptor(<b>Не более 5 опций!</b>).</div>
+									</div>
+								</div>	
+							</div>
+							   <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-3 control-label">{{ entry_validate_period }}</label>
+								       <div class="col-sm-3">
+											<select name="shipping_shiptor_validate_period" class="form-control">
+												{% for period in validate_periods %}
+												{% if period.second == shipping_shiptor_validate_period %}
+												<option value="{{ period.second }}" selected>{{ period.name }}</option>
+												{% else %}
+												<option value="{{ period.second }}">{{ period.name }}</option>
+												{% endif %}
+												{% endfor %} 
+											</select>
+								       </div>
+									<div class="col-sm-7">
+										<div class="checkbox">
+											<label class="control-label">
+												<div class="col-sm-1"></div>
+												<input type="checkbox" name="shipping_shiptor_auto_send" value="1" {% if shipping_shiptor_auto_send != 0 %} checked="checked" {% endif %}>
+												<input type="hidden" name="shipping_shiptor_time_auto" value="{{ shipping_shiptor_time_auto }}">
+												<b>{{ entry_auto_send }}</b>
+											</label>
+										</div>
+									</div>
+							       </div>
+						       </div>
+							    <div class="form-group">
+							       <div class="sh-flex">
+								       <label class="col-sm-3 control-label">{{ entry_order_status_for_api }}</label>
+								       <div class="col-sm-3">
+											<select name="shipping_shiptor_order_status_for_api" class="form-control">
+												{% for order_status in order_statuses %}
+												{% if order_status.order_status_id == shipping_shiptor_order_status_for_api %}
+												<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+												{% else %}
+												<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+												{% endif %}
+												{% endfor %} 
+											</select>
+								       </div>
+									<div class="col-sm-7">
+									</div>
+							       </div>
+						       </div>
+							   <table id="table" class="table table-bordered">
+								<tbody>
+								<tr>
+									<td colspan="2" style="text-align: center; vertical-align: middle;" >{{ entry_order_status_after_api }}</td>
+								</tr>
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_new }}</label>
+										<select name="shipping_shiptor_order_status_after_api_new" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_new %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %} 
+										</select>
+								    </td>
+									<td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_waiting_pickup }}</label>
+										<select name="shipping_shiptor_order_status_after_api_waiting_pickup" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_waiting_pickup %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %} 
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_waiting_send }}</label>
+										<select name="shipping_shiptor_order_status_after_api_waiting_send" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_waiting_send %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+									<td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_arrived_to_warehouse }}</label>
+										<select name="shipping_shiptor_order_status_after_api_arrived_to_warehouse" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_arrived_to_warehouse %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>	
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_packed }}</label>
+										<select name="shipping_shiptor_order_status_after_api_packed" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_packed %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								   <td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_prepared_to_send }}</label>
+										<select name="shipping_shiptor_order_status_after_api_prepared_to_send" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_prepared_to_send %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>	
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_sent }}</label>
+										<select name="shipping_shiptor_order_status_after_api_sent" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_sent %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+								    </td>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_delivered }}</label>
+										<select name="shipping_shiptor_order_status_after_api_delivered" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_delivered %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_waiting_on_delivery_point }}</label>
+										<select name="shipping_shiptor_order_status_after_api_waiting_on_delivery_point" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_waiting_on_delivery_point %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+								    </td>
+								   <td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_removed }}</label>
+										<select name="shipping_shiptor_order_status_after_api_removed" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_removed %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_returned }}</label>
+										<select name="shipping_shiptor_order_status_after_api_returned" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_returned %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+								    </td>
+								   <td style="text-align: center; vertical-align: middle;">
+								       <label>{{ entry_order_status_after_reported }}</label>
+										<select name="shipping_shiptor_order_status_after_api_reported" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_reported %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td style="text-align: center; vertical-align: middle;">
+										<label>{{ entry_order_status_after_lost }}</label>
+										<select name="shipping_shiptor_order_status_after_api_lost" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_lost %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+								    </td>
+								   <td style="text-align: center; vertical-align: middle;">
+								      <label>{{ entry_order_status_after_resend }}</label>
+										<select name="shipping_shiptor_order_status_after_api_resend" class="form-control">
+											<option value="0" {% if order_status_after_api_new == 0 %} selected {% endif %}>{{ text_not_use }}</option>
+											{% for order_status in order_statuses %}
+											{% if order_status.order_status_id == shipping_shiptor_order_status_after_api_resend %}
+											<option value="{{ order_status.order_status_id }}" selected>{{ order_status.name }}</option>
+											{% else %}
+											<option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+											{% endif %}
+											{% endfor %}
+										</select>
+									</td>
+								</tr>
+							  </tbody>
+							</table>
+					       </div>
+
+					       <!-- /настройки -->
+
+				       </div><!-- / tab-content -->
+
+			   {% else %}
+
+				       <div class="form-horizontal">
+					       <div class="form-group required">
+						       <div class="sh-flex">
+							       <label class="col-sm-2 control-label">{{ entry_authorization }}</label>
+							       <div class="col-sm-3">
+								       <input type="text" name="shipping_shiptor_authorization" value="{{ shipping_shiptor_authorization }}" class="form-control" />
+							       </div>
+							       <div class="col-sm-7">
+								       <div id="error-false" class="sh-help">{{ help_authorization }}</div>
+							       </div>
+						       </div>				
+					       </div>				
+					       <div class="form-group">
+						       <div class="col-sm-push-3 col-sm-9"><a onclick="Auth();" data-loading-text="{{ text_loading }}" class="btn btn-success">{{ button_authorization }}</a></div>
+					       </div>			
+				       </div>			
+			       {% endif %}		
+			       </form>
+			</div>
+		</div>
+	</div>
+</div>
+<link rel="stylesheet" href="view/javascript/shipping/shiptor/kladr/css/jquery.kladr.min.css" />
+<script src="view/javascript/shipping/shiptor/kladr/js/jquery.kladr.min.js"></script>
+<script>
+	$(document).on("click", '[name="shipping_shiptor_city_delivery"]', function() {
+		$('[name="shiptor_city_delivery"]').attr('style','');
+	});
+
+	$(document).on("keyup", '[name="shipping_shiptor_city_delivery"]', function() {
+      $(this);
+      var e = '<?php echo $country; ?>';
+      $(this).kladr({
+          type: $.kladr.type.city,
+          withParents: !0,
+          country: e,
+          limit: 50,
+		  select: function(e) {
+			$('#city-value').val(e.kladr_id);
+		  },
+          labelFormat: function(e, t) {
+              var a = "",
+              n = e.name.toLowerCase();
+              t = t.name.toLowerCase();
+              var r = n.indexOf(t);
+              return r = r > 0 ? r : 0, e.type_short && (a += e.type_short + ". "), t.length < e.name.length ? (a += e.name.substr(0, r), a += "<strong>" + e.name.substr(r, t.length) + "</strong>", a += e.name.substr(r + t.length, e.name.length - t.length - r)) : a += "<strong>" + e.name + "</strong>", e.administrative_area && (a += " <small>" + e.readable_parents + ".</small>"), a
+          }
+      })
+	});
+</script>
+<script>
+$('#datetimepicker').datetimepicker({language: 'ru', pickDate: false, icons: {time: "fa fa-clock-o", date: "fa fa-calendar", up: "fa fa-arrow-up", down: "fa fa-arrow-down"}});
+
+$('input[name=shipping_shiptor_regions]').autocomplete({
+	delay: 500,
+	source: function(request, response) {
+		$.ajax({
+			url: 'index.php?route=extension/shipping/shiptor/regions&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+			dataType: 'json',
+			success: function(json) {		
+				response($.map(json, function(item) {
+					return { label: item.name, value: item.id }
+				}));
+			}
+		});
+	},
+	select: function(item) {
+		$('[name=shiptor_regions]').val('');
+		$('#shiptor-regions' + item.value).remove();
+		$('#shiptor-regions').append('<div id="shiptor-regions' + item.value + '"><i class="fa fa-minus-circle"></i> ' + item.label + '<input type="hidden" name="shipping_shiptor_regions[]" value="' + item.value + '" /></div>');	
+	}
+});
+	
+$('#shiptor-regions').delegate('.fa-minus-circle', 'click', function() {
+	$(this).parent().remove();
+});
+
+function exportProduct() {
+	$('#input-export-product').button('loading');
+	if (confirm('"Выгрузить данные по товарам в Shiptor ?"')) {
+		$("#success-product").html("");
+		$("#error-product").html("");
+		$.post('index.php?route=extension/shipping/shiptor/exportProduct&user_token={{ user_token }}', { type: 'export' }).done(function(json) {
+			if (json.success) {
+				$("#error-product").html("");
+				$('#input-export-product').button('reset');
+				$("#success-product").html("<b class='text-success'>" + json.success + "</a></b>");
+			}
+			if (json.error) {
+				$("#success-product").html("");
+				$('#input-export-product').button('reset');
+				$("#error-product").html("<b class='text-danger'>" + json.error + "</a></b>");
+			}
+		});
+	}else{
+		$("#success-product").html("");
+		$("#error-product").html("");
+		$('#input-export-product').button('reset');
+	}
+}
+
+function Auth() {
+	$.ajax({
+		url: 'index.php?route=extension/shipping/shiptor/auth&user_token={{ user_token }}',
+		data: {'shipping_shiptor_authorization':$('input[name=shipping_shiptor_authorization]').val()},
+		type: 'POST',
+		dataType: 'json',
+		beforeSend: function() {			
+			$('.text-danger').remove();
+		},
+		success: function(json) {
+			if (json.error) {
+			$("#error-false").html("<b class='text-danger'>" + json.error + ". Проверьте ключ в <a class='help_authorization' href='https://shiptor.ru/account/settings/api' target='_blank'>личном кабинете</a></b>");
+			}			
+			if (json.success) {
+				document.location.reload(true);
+			}
+		}
+	});
+}
+function setCorrectPercent(id){
+	if($('select[name=shipping_shiptor_'+id+'_type]').val()=='P' &&
+	   ($('input[name=shipping_shiptor_'+id+'_markup]').val()>100 || $('input[name=shipping_shiptor_'+id+'_markup]').val()<-100)){
+		
+		if($('input[name=shipping_shiptor_'+id+'_markup]').val().indexOf('-')==-1){
+			if($('input[name=shipping_shiptor_'+id+'_markup]').val()>100){
+				$('input[name=shipping_shiptor_'+id+'_markup]').val('100');
+			}
+		}
+		else {
+			if($('input[name=shipping_shiptor_'+id+'_markup]').val()<-100){
+				$('input[name=shipping_shiptor_'+id+'_markup]').val('-100');
+			}
+		}
+	}
+	$('#tab-'+id+' input.form-control:not(input[name=shipping_shiptor_'+id+'_markup],input[name=shipping_shiptor_'+id+'_my_comment],input[name=shipping_shiptor_'+id+'_sort_order])').each(function(){
+		if($(this).val().indexOf('-')!=-1){
+			$(this).val($(this).val().split('-')[1]);
+		}
+	});
+}
+$('#form-shiptor').on('focusout','input.form-control',function(){
+	setCorrectPercent();
+});
+$('#form-shiptor').on('submit', function(event){
+	var id = $('#tab-general .tab-content .tab-pane.active').attr('id').split('-')[1],
+            timeVal, time;
+	if($('select[name=shipping_shiptor_'+id+'_type]').val()!='0' && $('input[name=shipping_shiptor_'+id+'_markup]').val()==''){
+		$('select[name=shipping_shiptor_'+id+'_type]').val(0);
+	}
+	event.preventDefault();
+	setCorrectPercent(id);
+	if($('#datetimepicker input').length > 0){
+            timeVal = $('#datetimepicker input').val();
+            if(!!timeVal){
+                var time = timeVal.split(':');
+                if(time[0]>=12 && time[0]<21){
+                        $('.form-group .alert').remove();
+                        $('#datetimepicker').parent().siblings('div').find('.sh-help').after('<div class="alert">{{ error_is_time }}</div>');
+                        return;
+                }
+            }
+        }
+	$(this).unbind('submit').submit();
+});
+$('input[data-name=status]').on('change', function(){
+	var shipping = $(this);
+	if(shipping.is(':checked')){
+		$('li[data-id='+shipping.attr('data-id')+']').removeClass('status-off').addClass('status-on');
+	}
+	else{
+		$('li[data-id='+shipping.attr('data-id')+']').removeClass('status-on').addClass('status-off');
+	}
+});
+</script>
+
+{{ footer }} 

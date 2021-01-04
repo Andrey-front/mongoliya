@@ -1,0 +1,34 @@
+@import './libs/bootstrap/bootstrap';
+@import './libs/font-awesome/font-awesome';
+
+@import './libs/mahardhi/mahardhi-font';
+@import './libs/syotimer';
+@import './libs/swiper/swiper';
+@import './libs/swiper/opencart';
+
+@import './stylesheet';
+@import './basic';
+
+@import './components/header/header';
+@import './components/header/header-top';
+@import './components/header/header-search';
+@import './components/header/category-menu';
+@import './components/header/vertical-category';
+
+@import './components/carousel-mongoliya';
+
+@import './components/category-popular';
+
+@import './components/collection-icons';
+
+@import './components/collection';
+@import './components/offer';
+@import './components/reviews-carousel';
+
+@import './components/articles-useful';
+
+@import './components/footer/footer';
+@import './components/footer/footer-bottom';
+
+
+@import './media';

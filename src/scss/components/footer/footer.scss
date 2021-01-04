@@ -1,0 +1,87 @@
+.footer {
+  background: url('../image/footer.jpg') top center;
+  font-size: 14px;
+
+  .col-sm-3,
+  .col-sm-4,
+  .col-sm-2 {
+    a {
+      color: white;
+    }
+  }
+
+  &__caption {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 19px;
+  }
+
+  &-info {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 21px;
+    padding-left: 0;
+    list-style: none;
+    margin: 0;
+  }
+
+  a.footer__logo {
+    padding-top: 0;
+    margin-bottom: 16px;
+  }
+
+  &__phone {
+    &::before {
+      content: '';
+      display: inline-block;
+      margin-right: 20px;
+      vertical-align: middle;
+      background-color: white;
+      background: url('../image/phone.svg') no-repeat center;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  &__email {
+    margin-top: 14px;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      margin-right: 20px;
+      vertical-align: middle;
+      background-color: white;
+      background: url('../image/envelope.svg') no-repeat center;
+      width: 24px;
+      height: 24px;
+    }
+
+    a {
+      display: inline-block !important;
+      font-size: 18px !important;
+      font-weight: 700;
+      line-height: 21px;
+    }
+  }
+
+  &__bold {
+    font-weight: 600;
+  }
+
+  &-contacts {
+    margin-top: 25px;
+
+    a {
+      display: inline-block !important;
+    }
+  }
+}
+
+@media (min-width: 320px) {}
+
+@media (min-width: 768px) {}
+
+@media (min-width: 992px) {}
+
+@media (min-width: 1200px) {}

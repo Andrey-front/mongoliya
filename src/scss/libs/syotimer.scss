@@ -1,0 +1,61 @@
+.syotimer {
+    text-align: center;
+    padding: 0 0 10px;
+}
+
+.syotimer-cell {
+    display: inline-block;
+    margin: 0 30px;
+    width: 79px;
+}
+
+.syotimer-cell__value {
+    margin: 0 0 5px;
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 66px;
+    text-align: center;
+}
+
+.syotimer-cell__unit {
+    font-size: 18px;
+    line-height: 21px;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+@media (min-width: 320px) {
+  
+    .syotimer-cell {
+        margin: 0 10px;
+        width: 50px;
+    }
+
+    .syotimer-cell__value {
+        font-size: 36px;
+    }
+
+    .syotimer-cell__unit {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 768px) {
+    .syotimer {
+        margin: auto 47px;
+    }
+    .syotimer-cell {
+        margin: 0 30px;
+        width: 79px;
+    }
+
+    .syotimer-cell__value {
+        font-size: 56px;
+        line-height: 66px;
+    }
+
+    .syotimer-cell__unit {
+        font-size: 18px;
+        line-height: 21px;
+    }
+}

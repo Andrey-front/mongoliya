@@ -1,0 +1,120 @@
+.collection {
+  max-width: 1920px;
+  margin: 0 auto;
+
+  &__left,
+  &__center,
+  &__right {
+    position: relative;
+    height: 337px;
+    background-repeat: no-repeat;
+    transition: all 350ms ease-out 0s;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: inherit;
+      transition: inherit;
+    }
+
+    &:hover::before {
+      transform: scale(1.2);
+    }
+  }
+
+  &__left {
+    padding: 23px 0 0 28px;
+    background-image: url(../image/winter.jpg);
+    background-position: left top;
+  }
+
+  &__center {
+    padding: 23px 0 0 28px;
+    background-image: url(../image/winter-warm.jpg);
+    background-position: center top;
+  }
+
+  &__right {
+    padding: 212px 0 0 28px;
+    background-image: url(../image/kashemir.jpg);
+  }
+
+  &__caption {
+    position: relative;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 26px;
+  }
+
+  &__text {
+    position: relative;
+    max-width: 361px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 21px;
+  }
+}
+
+@media (min-width: 320px) {
+  .collection {
+    &__right {
+      background-position: left top;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .collection {
+    &__wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    &__left,
+    &__right {
+      flex: 1;
+    }
+
+    &__right {
+      background-position: right top;
+    }
+
+    &__center {
+      flex: 1;
+    }
+  }
+}
+
+@media (min-width: 992px) {
+  .collection {
+    &__wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    &__left,
+    &__right {
+      flex: 1;
+    }
+
+    &__center {
+      flex: 1;
+    }
+  }
+}
+
+@media (min-width: 1200px) {
+  .collection {
+
+    &__center {
+      flex: 2;
+    }
+  }
+}

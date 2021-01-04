@@ -1,0 +1,1225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+<name>Shiptor - Редактирование заказа</name>
+<version>3.3.1</version>
+<author>Kuznetsov Bogdan</author>
+<link>https://shiptor.ru</link>
+<code>shiptor_admin_order</code>
+
+<file path="admin/controller/common/column_left.php">
+	<operation error="skip">
+	<search trim="true"><![CDATA[if ($this->user->hasPermission('access', 'sale/recurring')) {]]></search>
+	<add position="before"><![CDATA[
+	/* Shiptor - агрегатор доставки */
+	$this->load->language('extension/shipping/shiptor');
+	if ($this->user->hasPermission('access', 'extension/shipping/shiptor')) {	
+		$sale[] = array(
+			'name'	   => $this->language->get('text_order_shiptor'),
+			'href'     => $this->url->link('extension/shipping/shiptor/order', 'user_token=' . $this->session->data['user_token'], true),
+			'children' => array()		
+		);	
+	}
+	/* Shiptor - агрегатор доставки */
+	]]></add>
+	</operation>
+</file>
+<file path="admin/controller/sale/order.php">
+	<operation error="skip">
+	<search trim="true"><![CDATA[$data['currency_code'] = $order_info['currency_code'];]]></search>
+	<add position="after"><![CDATA[
+
+	/* Shiptor - агрегатор доставки */
+	$this->load->model('extension/shipping/shiptor');
+	$data['shiptor_order'] = $this->model_extension_shipping_shiptor->getOrder($this->request->get['order_id']);
+
+	/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+</file>
+
+<file path="admin/view/template/sale/order_form.twig">
+	<operation error="skip">
+	<search trim="true"><![CDATA[{{ text_order_detail }}]]></search>
+	<add position="after" offset="15"><![CDATA[
+
+	<!-- Shiptor - агрегатор доставки -->
+
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="input-shipping-point">Выбор пункта выдачи заказа</label>
+		<div class="col-sm-10">
+			<div class="input-group">
+				<select name="shipping_point" id="input-shipping-point" class="form-control"></select>				
+				<span class="input-group-btn"><button type="button" id="button-shipping-point" data-loading-text="{{ text_loading }}" class="btn btn-primary">{{ button_apply }}</button></span>
+			</div>
+	  </div>
+	</div>
+	
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="input-shipping-time">Время доставки</label>
+		<div class="col-sm-10">
+			<div class="input-group">
+				<select name="shipping-time" id="input-shipping-time" class="form-control"></select>				
+				<span class="input-group-btn"><button type="button" id="button-shipping-time" data-loading-text="{{ text_loading }}" class="btn btn-primary">{{ button_apply }}</button></span>
+			</div>
+	  </div>
+	</div>
+
+	<!-- / Shiptor - агрегатор доставки -->
+	
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[if (json['payment_methods'][i]['code'] == $('select[name=\'payment_method\'] option:selected').val()) {]]></search>
+	<add position="replace"><![CDATA[if (json['payment_methods'][i]['code'] == $('select[name=\'payment_method\'] option:selected').val()
+	{% if shiptor_order and shiptor_order.payment_code %}|| json['payment_methods'][i]['code'] == '{{ shiptor_order.payment_code }}'{% endif %}) {]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('select[name=\'shipping_method\']').html(html);]]></search>
+	<add position="after"><![CDATA[
+	if($('select[name="shipping_method"]').val()!=''){
+		setTimeout(function(){
+			$('#button-shipping-method').trigger('click');
+		}, 500);
+		
+		setTimeout(function(){
+			$('#button-payment-method').trigger('click');
+		}, 1000);
+	}
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-shipping-method').on('click', function() {]]></search>
+	<add position="after" offset="25"><![CDATA[
+					<!-- / Shiptor - агрегатор доставки -->
+					$.ajax({
+						url: '{{ catalog }}index.php?route=api/shiptor/address&api_token={{ api_token }}',
+						type: 'POST',
+						data: { shipping_method: $('[name="shipping_method"] option:selected').val(), order_id : $('[name="order_id"]').val() },
+						crossDomain: true,
+						success: function(json) {
+							$('.alert, .text-danger').remove();
+							$('.form-group').removeClass('has-error');
+							
+							if (json['error']) {
+								$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+								$('select[name=\'shipping_point\']').parent().parent().parent().addClass('has-error');
+							}
+				
+							html_points = '';
+							html_times = '';
+							
+							if (json['success']) {
+								html_points += '<option value="">{{ text_select }}</option>';
+								
+								for (i in json['success']) {
+									html_points += '<option value="' + json['success'][i]['id']+ '" data-shiptor-courier-id="' + json['success'][i]['courier_id'] + '" data-shiptor-address="' + json['success'][i]['address'] + '" data-shiptor-cod="' + json['success'][i]['cod'] + '" data-shiptor-card="' + json['success'][i]['card'] + '"';
+									{% if shiptor_order and shiptor_order.delivery_point %}if(json['success'][i]['id']=={{ shiptor_order.delivery_point }}) html_points += ' selected';{% endif %}
+									html_points +='>' + json['success'][i]['address'] + '</option>';
+								}
+							}
+              
+							if (json['times']) {
+								html_times += '<option value="">{{ text_select }}</option>';
+								
+								for (i in json['times']) {
+									html_times += '<option value="' + i+ '" data-shiptor-courier-id="' + json['times'][i]['courier_id'] + '" data-shiptor-cod="' + json['times'][i]['cod'] + '" data-shiptor-card="' + json['times'][i]['card'] + '"';
+									{% if shiptor_order and shiptor_order.time %}if(i=={{ shiptor_order.time }}) html_times += ' selected';{% endif %}
+									html_times +='>' + json['times'][i]['name'] + '</option>';
+								}
+							}
+							
+							var payment = false;
+							
+							if(html_points!=''){
+								$('#button-shipping-time').parents('.form-group').hide();
+								$('select[name="shipping_point"]').html(html_points).parents('.form-group').show();
+								if($('select[name="shipping_point"]').val()!=''){
+									$('#button-shipping-point').click();
+								}
+							}
+							else if(html_times!=''){
+								$('#button-shipping-point').parents('.form-group').hide();
+								$('#button-shipping-time').parents('.form-group').show();
+								$('select[name="shipping-time"]').html(html_times);
+								payment = true;
+							}
+							else{
+								$('#button-shipping-point').parents('.form-group').hide();
+								$('#button-shipping-time').parents('.form-group').hide();
+								payment = true;
+							}
+							if(payment == true){
+								$.ajax({
+									url: '{{ catalog }}index.php?route=api/payment/methods&api_token={{ api_token }}',
+									dataType: 'json',
+									crossDomain: true,
+									success: function(json) {
+										if (json['error']) {
+											$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+										} else {
+											html = '<option value="">{{ text_select }}</option>';
+											if (json['payment_methods']) {
+												for (i in json['payment_methods']) {
+													if (json['payment_methods'][i]['code'] == $('[name="payment_method"] option:selected').val()) {
+														html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+													} 
+													{% if shiptor_order and shiptor_order.payment_code %}
+													else if(!$('[name="payment_method"] option:selected').val() && json['payment_methods'][i]['code'] == '{{ shiptor_order.payment_code }}'){
+														html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+													}
+													{% endif %}
+													else {
+														html += '<option value="' + json['payment_methods'][i]['code'] + '">' + json['payment_methods'][i]['title'] + '</option>';
+													}
+												}
+											}
+											$('[name="payment_method"]').html(html);
+											if($('select[name="payment_method"]').val()!=''){
+												$('#button-payment-method').click();
+											}
+										}
+									},
+									error: function(xhr, ajaxOptions, thrownError) {
+										alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+									}
+								});
+							}
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+					<!-- / Shiptor - агрегатор доставки -->
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-payment-method').on('click', function() {]]></search>
+	<add position="before"><![CDATA[
+			function recalculate_shipping(){
+				var cur_payment_method = '';
+				var checked_method = $("select[name='payment_method']").val();
+				var method_group = (checked_method.indexOf('shiptor_') !== -1) ? 'shiptor' : 'not_shiptor';
+				
+				cur_payment_method = method_group;
+				var data = $("select[name='payment_method'], select[name='shipping_method']").serialize();
+				$.ajax({
+				  url: '{{ catalog }}index.php?route=api/shiptor/recalculate&api_token={{ api_token }}',
+				  dataType: 'json',
+				  type: 'post',
+				  data: data,
+				  success: function(json) {
+							// Shipping Methods
+							html = '<option value="">{{ text_select }}</option>';
+					
+							if (json['shipping_methods']) {
+								for (i in json['shipping_methods']) {
+									html += '<optgroup label="' + json['shipping_methods'][i]['title'] + '">';
+
+									if (!json['shipping_methods'][i]['error']) {
+										for (j in json['shipping_methods'][i]['quote']) {
+											if (json['shipping_methods'][i]['quote'][j]['code'] == $('select[name=\'shipping_method\'] option:selected').val() ) {
+												html += '<option value="' + json['shipping_methods'][i]['quote'][j]['code'] + '" selected="selected">' + json['shipping_methods'][i]['quote'][j]['title'] + ' - ' + json['shipping_methods'][i]['quote'][j]['text'] + '</option>';
+											}
+											{% if shiptor_order and shiptor_order.shipping_code %}
+											else if(!$('[name="shipping_method"] option:selected').val() && json['shipping_methods'][i]['code'] == '{{ shiptor_order.shipping_code }}'){
+												html += '<option value="' + json['shipping_methods'][i]['code'] + '" selected="selected">' + json['shipping_methods'][i]['title'] + '</option>';
+											}
+											{% endif %}
+											else {
+												html += '<option value="' + json['shipping_methods'][i]['quote'][j]['code'] + '">' + json['shipping_methods'][i]['quote'][j]['title'] + ' - ' + json['shipping_methods'][i]['quote'][j]['text'] + '</option>';
+											}
+										}
+									} else {
+										html += '<option value="" style="color: #F00;" disabled="disabled">' + json['shipping_method'][i]['error'] + '</option>';
+									}
+
+									html += '</optgroup>';
+								}
+							}
+							
+							if(json['error']){
+								$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+							}
+							$('select[name=\'shipping_method\']').html(html);
+							$('#button-refresh').trigger('click');
+				  },
+				});
+			}
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-payment-method').on('click', function() {]]></search>
+	<add position="after"><![CDATA[
+		recalculate_shipping();
+		setTimeout(function(){
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[// Coupon]]></search>
+	<add position="before" offset="2"><![CDATA[}, 1200);]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[{{ footer }}]]></search>
+	<add position="before"><![CDATA[
+
+	<!-- Shiptor - агрегатор доставки -->
+
+	<link rel="stylesheet" href="view/javascript/shipping/shiptor/kladr/css/jquery.kladr.min.css" />
+	<script src="view/javascript/shipping/shiptor/kladr/js/jquery.kladr.min.js"></script>
+
+	<script>
+	var user_token = '{{ user_token }}';
+	var cur_payment_method = 'shiptor';
+	
+	$(document).on('click', '#button-shipping-point', function() {
+		var shiptor = $('[name="shipping_point"] option:selected');
+		var cod = parseInt(shiptor.attr('data-shiptor-cod'));
+		var card = parseInt(shiptor.attr('data-shiptor-card'));
+
+		$.ajax({
+			url: '{{ catalog }}index.php?route=api/shiptor/save&api_token={{ api_token }}',
+			type: 'POST',
+			data: { shipping_method: $('[name="shipping_method"] option:selected').val(), point_id: shiptor.val(), courier_id: shiptor.attr('data-shiptor-courier-id'), address: shiptor.attr('data-shiptor-address'), cod: shiptor.attr('data-shiptor-cod'), card: shiptor.attr('data-shiptor-card') },
+			crossDomain: true,
+			beforeSend: function() {
+				$('#button-save').button('loading');
+			},
+			complete: function() {
+				$('#button-save').button('reset');
+			},
+			success: function(json) {				
+				$('.alert, .text-danger').remove();
+				$('.form-group').removeClass('has-error');
+
+				if (json['error']) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('select[name=\'shipping_point\']').parent().parent().parent().addClass('has-error');
+				}
+
+				if (json['success']) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$.ajax({
+						url: '{{ catalog }}index.php?route=api/payment/methods&api_token={{ api_token }}',
+						dataType: 'json',
+						crossDomain: true,
+						success: function(json) {
+							if (json['error']) {
+								$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+							} else {
+								html = '<option value="">{{ text_select }}</option>';
+			
+								if (json['payment_methods']) {
+									for (i in json['payment_methods']) {
+										if((json['payment_methods'][i]['code']=='shiptor_pay' && cod==0) || (json['payment_methods'][i]['code']=='shiptor_paycard' && card==0)) continue;
+										if (json['payment_methods'][i]['code'] == $('[name="payment_method"] option:selected').val()) {
+											html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+										} 
+										{% if shiptor_order and shiptor_order.payment_code %}
+										else if(!$('[name="payment_method"] option:selected').val() && json['payment_methods'][i]['code'] == '{{ shiptor_order.payment_code }}'){
+											html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+										}
+										{% endif %}
+										else {
+											html += '<option value="' + json['payment_methods'][i]['code'] + '">' + json['payment_methods'][i]['title'] + '</option>';
+										}
+									}
+								}
+			
+								$('[name="payment_method"]').html(html);
+								if($('select[name="payment_method"]').val()!=''){
+									$('#button-payment-method').click();
+									$('#button-refresh').trigger('click');
+								}
+							}
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+
+		
+	});
+	$(document).on('click', '#button-shipping-time', function() {
+		var shiptor = $('[name="shipping-time"] option:selected');
+    
+		$.ajax({
+			url: '{{ catalog }}index.php?route=api/shiptor/save&api_token={{ api_token }}',
+			type: 'POST',
+			data: { shipping_method: $('[name="shipping_method"] option:selected').val(), terms: shiptor.val(), courier_id: shiptor.attr('data-shiptor-courier-id'), cod: shiptor.attr('data-shiptor-cod'), card: shiptor.attr('data-shiptor-card') },
+			crossDomain: true,
+			beforeSend: function() {
+				$('#button-save').button('loading');
+			},
+			complete: function() {
+				$('#button-save').button('reset');
+			},
+			success: function(json) {				
+				$('.alert, .text-danger').remove();
+				$('.form-group').removeClass('has-error');
+
+				if (json['error']) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('select[name=\'shipping_point\']').parent().parent().parent().addClass('has-error');
+				}
+
+				if (json['success']) {
+					$('#content > .container-fluid').prepend('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$.ajax({
+						url: '{{ catalog }}index.php?route=api/payment/methods&api_token={{ api_token }}',
+						dataType: 'json',
+						crossDomain: true,
+						success: function(json) {
+							if (json['error']) {
+								$('#content > .container-fluid').prepend('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+							} else {
+								html = '<option value="">{{ text_select }}</option>';
+			
+								if (json['payment_methods']) {
+									for (i in json['payment_methods']) {
+										if (json['payment_methods'][i]['code'] == $('[name="payment_method"] option:selected').val()) {
+											html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+										} 
+										{% if shiptor_order and shiptor_order.payment_code %}
+										else if(!$('[name="payment_method"] option:selected').val() && json['payment_methods'][i]['code'] == '{{ shiptor_order.payment_code }}'){
+											html += '<option value="' + json['payment_methods'][i]['code'] + '" selected="selected">' + json['payment_methods'][i]['title'] + '</option>';
+										}
+										{% endif %}
+										else {
+											html += '<option value="' + json['payment_methods'][i]['code'] + '">' + json['payment_methods'][i]['title'] + '</option>';
+										}
+									}
+								}
+								$('[name="payment_method"]').html(html);
+								if($('select[name="payment_method"]').val()!=''){
+									$('#button-payment-method').click();
+									$('#button-refresh').trigger('click');
+								}
+							}
+						},
+						error: function(xhr, ajaxOptions, thrownError) {
+							alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+						}
+					});
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+
+		
+	});
+	
+	$(document).on("keyup", '[name="city"]', function() {
+      $(this);
+      var e = $('.tab-pane.active select[name="country_id"]').val();
+      $(this).kladr({
+          type: $.kladr.type.city,
+          withParents: !0,
+          country: e,
+          limit: 50,
+          select: function(e) {
+              $('[name="city"]').val(e.name), $('.tab-pane.active select[name="zone_id"]').val(e.zone_id), $.ajax({
+                  url: "{{ catalog }}index.php?route=api/shiptor/kladr&api_token={{ api_token }}",
+                  type: "post",
+                  data: {
+                      kladr_id: e.kladr_id
+                  },
+                  crossDomain: !0
+              })
+          },
+          labelFormat: function(e, t) {
+              var a = "",
+                  n = e.name.toLowerCase();
+              t = t.name.toLowerCase();
+              var r = n.indexOf(t);
+              return r = r > 0 ? r : 0, e.type_short && (a += e.type_short + ". "), t.length < e.name.length ? (a += e.name.substr(0, r), a += "<strong>" + e.name.substr(r, t.length) + "</strong>", a += e.name.substr(r + t.length, e.name.length - t.length - r)) : a += "<strong>" + e.name + "</strong>", e.administrative_area && (a += " <small>" + e.readable_parents + ".</small>"), a
+          }
+      })
+	  });
+	</script>
+	
+	<!-- / Shiptor - агрегатор доставки -->
+	
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-save').on('click', function() {]]></search>
+	<add position="after" offset="27"><![CDATA[
+	<!-- Shiptor - агрегатор доставки -->
+		var S = location.search.split('&');
+		for (i in S){
+			if(S[i].indexOf('return')==0){
+				$.post('index.php?route=extension/shipping/shiptor/shiptor_status&user_token={{ user_token }}', { type: 'status', order_id: $('input[name=\'order_id\']').val() }).done(function(json) {
+				});
+			  var uri = unescape(S[i].split('=')[1]);
+			  window.location.href = uri;
+			}
+		}
+	<!-- Shiptor - агрегатор доставки -->
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[if (json['totals'].length) {]]></search>
+	<add position="after"><![CDATA[
+	var selected_shipping = $('select[name=shipping_method] option:selected').text().split('-')[0].trim();
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[total = json['totals'][i];]]></search>
+	<add position="after"><![CDATA[
+	if(total['title']==selected_shipping)$('select[name=shipping_method] option:selected').text(total['title'] + ' - ' + total['text']);
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[if (json['shipping_methods'][i]['quote'][j]['code'] == $('select[name=\'shipping_method\'] option:selected').val()) {]]></search>
+	<add position="replace"><![CDATA[
+						if (json['shipping_methods'][i]['quote'][j]['code'] == $('select[name=\'shipping_method\'] option:selected').val()
+						{% if shiptor_order and shiptor_order.shipping_code %} ||
+						json['shipping_methods'][i]['quote'][j]['code'] == '{{ shiptor_order.shipping_code }}'{% endif %}) {
+	 
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-customer').on('click', function() {]]></search>
+	<add position="after"><![CDATA[
+	{% if shiptor_order and shiptor_order.kladr_id %}
+		$.ajax({
+			url: "{{ catalog }}index.php?route=api/shiptor/kladr&api_token={{ api_token }}",
+			type: "post",
+			data: { kladr_id: '{{ shiptor_order.kladr_id }}' },
+			crossDomain: true
+		});
+	{% endif %}
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[if ($('input[name=\'order_id\']').val() == 0) {]]></search>
+	<add position="after"><![CDATA[
+	var permission = true;
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#button-save').on('click', function() {]]></search>
+	<add position="after"><![CDATA[
+	$.post('index.php?route=extension/shipping/shiptor/shiptor_status&user_token={{ user_token }}', { type: 'status', order_id: $('input[name=\'order_id\']').val() }).done(function(json) {
+		var permission = false;
+		var permission_url = false;
+		
+		var S = location.search.split('&');
+		for (i in S){
+			if(S[i].indexOf('return')==0){
+				var permission_url = true;
+			}
+		}
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[var url = '{{ catalog }}index.php?route=api/order/edit&api_token={{ api_token }}&store_id=' + $('select[name=\'store_id\'] option:selected').val() + '&order_id=' + $('input[name=\'order_id\']').val();]]></search>
+	<add position="replace"><![CDATA[
+		if(json.status == 'new' && permission_url == true){
+			if (confirm('"Заказ отредактирован. Применить изменения в Shiptor ?"')) {
+				var url = '{{ catalog }}index.php?route=api/order/edit&api_token={{ api_token }}&store_id=' + $('select[name=\'store_id\'] option:selected').val() + '&type=save&order_id=' + $('input[name=\'order_id\']').val();
+				var permission = true;
+			}else{
+				var permission = true;
+				var url = '{{ catalog }}index.php?route=api/order/edit&api_token={{ api_token }}&store_id=' + $('select[name=\'store_id\'] option:selected').val() + '&order_id=' + $('input[name=\'order_id\']').val();
+			}
+		}else if(json.status == 'old' && permission_url == true){
+			alert('"Заказ НЕ будет изменен в Shiptor"');
+			var permission = true;
+			var url = '{{ catalog }}index.php?route=api/order/edit&api_token={{ api_token }}&store_id=' + $('select[name=\'store_id\'] option:selected').val() + '&order_id=' + $('input[name=\'order_id\']').val();
+		}else{
+			var permission = true;
+			var url = '{{ catalog }}index.php?route=api/order/edit&api_token={{ api_token }}&store_id=' + $('select[name=\'store_id\'] option:selected').val() + '&order_id=' + $('input[name=\'order_id\']').val();
+		}	
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[url: url,]]></search>
+	<add position="before" offset="1"><![CDATA[
+		if(permission == true){
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[url: url,]]></search>
+	<add position="after" offset="40"><![CDATA[
+	}
+});
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('#order a[data-toggle=\'tab\']').on('click', function(e) {]]></search>
+	<add position="before"><![CDATA[
+		var S = location.search.split('&');
+		for (i in S){
+			if(S[i].indexOf('return')==0){
+				var uri = unescape(S[i].split('=')[1]);
+				$('.fa.fa-reply').parent().attr('href',uri);
+			}
+		}
+	]]></add>
+	</operation>
+</file>
+
+<file path="admin/view/template/sale/order_info.twig">
+	<operation error="skip">
+	<search trim="true"><![CDATA[$(document).delegate('#button-invoice', 'click', function() {]]></search>
+	<add position="before"><![CDATA[
+		var S = location.search.split('&');
+		for (i in S){
+			if(S[i].indexOf('return')==0){
+			  var uri = unescape(S[i].split('=')[1]);
+			  $('.fa.fa-reply').parent().attr('href',uri);
+			}
+		}
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$('textarea[name=\'comment\']').val('');]]></search>
+	<add position="after"><![CDATA[
+		var S = location.search.split('&');
+		for (i in S){
+			if(S[i].indexOf('return')==0){
+			  var uri = unescape(S[i].split('=')[1]);
+			  window.location.href = uri;
+			}
+		}
+	]]></add>
+	</operation>
+</file>
+
+<file path="catalog/controller/api/shipping.php">
+	<operation error="skip">
+	<search trim="true"><![CDATA[public function address() {]]></search>
+	<add position="before"><![CDATA[
+
+					/* Shiptor - агрегатор доставки */
+					
+						public function __construct($registry) {
+							parent::__construct($registry);
+							
+							$registry->set('shiptor', new Shiptor($registry));
+						}
+
+					/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+
+	<operation error="skip">
+	<search trim="true"><![CDATA[$json['success'] = $this->language->get('text_address');]]></search>
+	<add position="before"><![CDATA[
+
+					/* Shiptor - агрегатор доставки */
+					
+						if(!empty($this->session->data['shipping_address']['city']) && !isset($this->session->data['shiptor']['kladr_id'])){
+							$results = $this->getKladrId($this->session->data['shipping_address']);
+				
+							if(isset($results['kladr_id'])){
+								$this->session->data['shiptor']['kladr_id'] = $results['kladr_id'];
+							}else{
+								unset($this->session->data['shiptor']['kladr_id']);
+							}
+						}
+
+					/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+	
+	<operation error="skip">
+	<search trim="true"><![CDATA[public function methods() {]]></search>
+	<add position="before"><![CDATA[
+
+					/* Shiptor - агрегатор доставки */
+
+					public function getKladrId($address = array()){
+		
+						if(!empty($address['zone_id'])){
+							$this->load->model('localisation/zone');
+							$zone = $this->model_localisation_zone->getZone($address['zone_id']);
+							$zone = mb_strtolower($zone['name']);
+							$zone = trim(str_replace($this->cleanAreas,'',$zone));
+						}
+						
+						$results = $this->shiptor->suggestSettlement(array('query' => trim($address['city']),'country_code'=>$address['iso_code_2']));
+						$searchCity = strtolower($address['city']);
+						$result = false;
+						foreach($results as $suggest){
+							if($result==false && $searchCity==strtolower($suggest['name'])){
+								if($suggest['readable_parents']!=''){
+									return $suggest;
+								}
+								else {
+									if(isset($zone) && trim(mb_strtolower($suggest['name']))==$zone)return $suggest;
+									else {
+										if(!isset($zone))return $suggest;
+									}
+								}
+							}
+						}
+						return $result;
+					}
+
+					/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+</file>
+
+<file path="catalog/controller/api/order.php">
+	<operation error="skip">
+	<search trim="true"><![CDATA[function delete]]></search>
+	<add position="before"><![CDATA[
+
+	/* Shiptor - агрегатор доставки */
+
+	private function getShiptorValidate($shipping_method) {
+		$this->language->load('extension/shipping/shiptor');
+
+		$this->load->model('extension/shipping/shiptor');
+
+		if ($shipping = $this->model_extension_shipping_shiptor->getValidate($this->request->post['shipping_method'])) {			
+			if ($shipping['shipping'] == 'P') {
+				if (! isset($this->session->data['shiptor']['address']['courier_id']) || ! isset($this->session->data['shiptor']['address']['point_id']) || ($shipping['courier_id'] != $this->session->data['shiptor']['address']['courier_id'])) {
+					return $this->language->get('error_shipping_point');
+				}
+			}
+
+			if ($shipping['shipping'] == 'A') {
+				unset($this->session->data['shiptor']['address']);
+				$this->session->data['shiptor']['address']['courier_id'] = $shipping['courier_id'];
+			}
+		} else {
+			unset($this->session->data['shiptor']['address']);
+		}
+	}
+
+	/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[if (!isset($this->session->data['shipping_method']))]]></search>
+	<add position="after" offset="2"><![CDATA[
+
+	/* Shiptor - агрегатор доставки */
+
+	if (isset($this->session->data['shipping_method']['code'])) {
+		if ($shiptor = $this->getShiptorValidate($this->session->data['shipping_method']['code'])) {
+			$json['error'] = $shiptor;
+		}
+	}
+
+	/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$json['order_id'] = $this->model_checkout_order->addOrder($order_data);]]></search>
+	<add position="after"><![CDATA[
+	
+	/* Shiptor - агрегатор доставки */
+
+	if (isset($this->session->data['shiptor']['kladr_id'], $this->session->data['shiptor']['address']['courier_id'])) {
+		$this->load->model('extension/shipping/shiptor');
+
+		$this->model_extension_shipping_shiptor->setOrder($json['order_id']);
+		
+		unset($this->session->data['shiptor']['address']);
+	}
+	
+	/* Shiptor - агрегатор доставки */
+	
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$this->model_checkout_order->addOrderHistory($order_id, $order_status_id);]]></search>
+	<add position="after"><![CDATA[
+	
+	/* Shiptor - агрегатор доставки */
+					
+	if(isset($order_id) && isset($this->request->get['type'])){
+		if($this->request->get['type'] == 'save'){
+			$this->editShiptor($order_id);
+		}
+	} 
+					
+	/* Shiptor - агрегатор доставки */
+	
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[public function edit() {]]></search>
+	<add position="before"><![CDATA[
+
+	/* Shiptor - агрегатор доставки */
+
+	private function editShiptor($order_id) {
+		$this->load->language('extension/shipping/shiptor');
+
+		$message = array();
+
+		if ($order_id) {
+			$params = array();
+
+			$this->load->model('extension/shipping/shiptor');
+
+			$params['external_id'] = $order_id;
+
+			$order = $this->model_extension_shipping_shiptor->getOrderEditShiptor($order_id);
+
+			$params['id'] = $order['shiptor_id'];
+			
+			$params['delivery_time'] = $order['time'];
+
+			$weight = trim($order['weight']);
+
+			if ($weight && is_numeric($weight)) {
+				$params['weight'] = (float)$weight;
+			}
+
+			$shipping_method = trim($order['shipping_method']);
+
+			if ($shipping_method && is_numeric($shipping_method)) {
+				$params['shipping_method'] = $shipping_method;
+			} else {
+				$message['error']['shipping'] = $this->language->get('error_is_shipping');
+			}
+			
+			if(stristr($order['shipping_code'],'shiptor.russian-post-') && $order['lastname']==''){
+				$message['error']['shipping'] = $this->language->get('error_is_surname');
+			}
+
+			$delivery_point = trim($order['delivery_point']);
+
+			if ($delivery_point) {
+				$params['delivery_point'] = $delivery_point;
+			} else {
+				if ($order['street']) {
+					$params['street'] = trim($order['street']);
+				} else if ($order['shipping_address_1']) {
+					$this->model_extension_shipping_shiptor->editOrder($order_id, array('street' => trim($order['shipping_address_1'])));
+
+					$params['street'] = trim($order['shipping_address_1']);
+				}
+
+				if ($order['house']) {
+					$params['house'] = trim($order['house']);
+				}
+
+				if ($order['apartment']) {
+					$params['apartment'] = trim($order['apartment']);
+				}
+				
+				if ($order['shipping_postcode']) {
+					$params['postal_code'] = trim($order['shipping_postcode']);
+				}
+			}
+
+			if ($order['firstname']) {
+				$params['name'] = $order['firstname'];
+			}
+
+			if ($order['lastname']) {
+				$params['surname'] = $order['lastname']!=''?$order['lastname']:$order['firstname'];
+			}
+			else{
+				$params['surname'] = $order['firstname'];
+			}
+
+			$email = utf8_strtolower(trim($order['email']));
+
+			if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				$params['email'] = $email;
+			} else {
+				$message['error']['email'] = $this->language->get('error_is_email');
+			}
+
+			if ($order['telephone']) {
+				if (preg_match('/^(\s*)?(\+)?([- _():=+]?\d[- _():=+]?){10,14}(\s*)?$/ui', $order['telephone'])) {
+					$params['phone'] = trim($order['telephone']);
+				} else {
+					$message['error']['telephone'] = $this->language->get('error_is_telephone');
+				}
+			}
+
+			$kladr_id = trim($order['kladr_id']);
+
+			if ($kladr_id) {
+				$params['kladr_id'] = $kladr_id;
+			} else {
+				$message['error']['kladr_id'] = $this->language->get('error_is_kladr');
+			}
+
+			// вычисляем наложенный платеж и объявленную стоимость
+
+			if ($order['total']) {
+				$params['declared_cost'] = round($order['total'], $this->currency->getDecimalPlace($this->config->get('config_currency')));
+
+				$params['cod'] = (false !== strpos($order['payment_code'], 'shiptor_')) ? round($order['total'], $this->currency->getDecimalPlace($this->config->get('config_currency'))) : 0;
+			}
+
+			if ($order['payment_code'] == 'shiptor_paycard') {
+				$params['cashless_payment'] = 1;
+			}
+			
+			// Пока отправляем только RU
+			if ($order['country']) {
+				$params['country_code'] = $order['country'];
+			}
+			
+			if ($order['shipping_zone']) {
+				$params['administrative_area'] = $order['shipping_zone'];
+			}
+			
+			if ($order['shipping_city']) {
+				$params['settlement'] = $order['shipping_city'];
+			}
+
+			// проверка наличия услуги с артикулом магазина (если нет - создаем)
+			// артикул = url сайта
+			
+			define('HTTPS_CATALOG', 'http://opencart.shiptor.ru/2.1/');
+
+			$shop_article = mb_substr(HTTPS_CATALOG, 0, 64);
+
+			if (!$this->shiptor->checkServiceByArticle($shop_article)) {
+				$data = array('name' => $this->language->get('text_shipping'), 'shopArticle' => $shop_article, 'price' => 0);
+				$this->shiptor->addService($data);
+			}
+
+			if ($products = $this->model_extension_shipping_shiptor->productsOrder($order_id)) {
+				$this->load->model('catalog/product');
+
+				// передаем номенклатуру
+
+				foreach ($products as $product) {
+					$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+
+					// TODO: проверить, откуда данные - из product или product_info
+					$shopArticle = '';
+					$name = $product['name'];
+					if(($this->config->get('shipping_shiptor_id_product')) && (!empty($product_info['sku']))){
+						$shopArticle = $product_info['sku'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+								$name .= '-' . $option['value'];
+							}
+						}
+					}elseif(($this->config->get('shipping_shiptor_id_product') == 0) && (!empty($product['model']))){
+						$shopArticle = $product['model'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+								$name .= '-' . $option['value'];
+							}
+						}
+					}elseif(!empty($product['sku'])){
+						$shopArticle = $product_info['sku'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+								$name .= '-' . $option['value'];
+							}
+						}
+					}else{
+						$shopArticle = $product['model'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+								$name .= '-' . $option['value'];
+							}
+						}
+					}
+
+					$product_shiptor_params = array(
+						'name'          => $name,
+						'article'       => empty($product['sku']) ? '' : $product['sku'],
+						'shopArticle'   => $shopArticle,
+						'length'		=> empty($product['length']) ? '' : $this->length->convert($product['length'], 1, 1),
+						'width'         => empty($product['width']) ? '' : $this->length->convert($product['width'],  1, 1),
+						'height'        => empty($product['height']) ? '' : $this->length->convert($product['height'], 1, 1),
+						'weight'        => empty($product['weight']) ? '' : $this->length->convert($product['weight'], 1, 1),
+						'price'         => round($product['price'], $this->currency->getDecimalPlace($this->config->get('config_currency'))),
+					);
+
+					$this->shiptor->addProduct($product_shiptor_params);
+				}
+
+				// если товар один, и указаны его размеры - берем их
+				// если товар один, и размеров нет - ставим нули, в библиотеке подставятся дефолтные размеры
+				// если товаров несколько - пропускаем блок, в библиотеке подставятся дефолтные размеры
+
+				if($this->config->get('shipping_shiptor_size')){
+					$params['width'] = $this->config->get('shipping_shiptor_default_width');
+					$params['length'] = $this->config->get('shipping_shiptor_default_length');
+					$params['height'] = $this->config->get('shipping_shiptor_default_height');
+				}elseif (1 == sizeof($products)) {
+					$product = reset($products);
+					
+					if (1 == $product['quantity']) {
+						$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+						$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+						
+						if($params['width'] > 0){
+							$params['width'] = $params['width'];
+						}else{
+							$params['width'] = $this->config->get('shipping_shiptor_default_width');
+						}
+						
+						if($params['length'] > 0){
+							$params['length'] = $params['length'];
+						}else{
+							$params['length'] = $this->config->get('shipping_shiptor_default_length');
+						}
+						
+						if($params['height'] > 0){
+							$params['height'] = $params['height'];
+						}else{
+							$params['height'] = $this->config->get('shipping_shiptor_default_height');
+						}
+					}else{
+						$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+						$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+						if($params['width'] > 0){
+							$width = $params['width'];
+						}else{
+							$width = $this->config->get('shipping_shiptor_default_width');
+						}
+						
+						if($params['length'] > 0){
+							$length = $params['length'];
+						}else{
+							$length = $this->config->get('shipping_shiptor_default_length');
+						}
+						
+						if($params['height'] > 0){
+							$height = $params['height'];
+						}else{
+							$height = $this->config->get('shipping_shiptor_default_height');
+						}
+						
+						$array_max_volume_product[] = $height;
+						$array_max_volume_product[] = $length;
+						$array_max_volume_product[] = $width;
+						
+						$max_volume_product = max($array_max_volume_product);
+						$sumV = $height*$length*$width*$product['quantity'];
+						$sumVQ = pow($sumV, 1/3);
+						$sumVQ = ceil($sumVQ);
+						
+						if($sumVQ > $max_volume_product){
+							$params['height'] = $sumVQ;
+							$params['length'] = $sumVQ;
+							$params['width'] = $sumVQ;
+						}else{
+							$params['length'] = $max_volume_product;
+							$params['width'] = sqrt($sumV/$max_volume_product);
+							$params['height'] = sqrt($sumV/$max_volume_product);
+						}
+					}
+				}else{
+					$sumV = 0;
+					
+					foreach($products as $product){
+						$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+						$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+						
+						if($params['width'] > 0){
+							$width = $params['width'];
+						}else{
+							$width = $this->config->get('shipping_shiptor_default_width');
+						}
+						
+						if($params['length'] > 0){
+							$length = $params['length'];
+						}else{
+							$length = $this->config->get('shipping_shiptor_default_length');
+						}
+						
+						if($params['height'] > 0){
+							$height = $params['height'];
+						}else{
+							$height = $this->config->get('shipping_shiptor_default_height');
+						}
+						
+						$array_max_volume_product[] = $height;
+						$array_max_volume_product[] = $length;
+						$array_max_volume_product[] = $width;
+						
+						$sumV += $height*$length*$width*$product['quantity'];
+					}
+					
+					
+					$max_volume_product = max($array_max_volume_product);
+					
+					$height = 0;
+					$length = 0;
+					$width = 0;
+					
+					$sumVQ = pow($sumV, 1/3);
+					$sumVQ = ceil($sumVQ);
+					
+					if($sumVQ > $max_volume_product){
+						$params['height'] = $sumVQ;
+						$params['length'] = $sumVQ;
+						$params['width'] = $sumVQ;
+					}else{
+						$params['length'] = $max_volume_product;
+						$params['width'] = sqrt($sumV/$max_volume_product);
+						$params['height'] = sqrt($sumV/$max_volume_product);
+					}
+				}
+				
+				$params['length'] = ceil($params['length']);
+				$params['width'] = ceil($params['width']);
+				$params['height'] = ceil($params['height']);
+
+				# Cписок продуктов
+				$params['products'] = array();
+				
+				// Coupon
+				$order_total = $this->model_extension_shipping_shiptor->totalOrder($order_id);
+				if(!empty($order_total)){
+					preg_match('#\((.*?)\)#', $order_total['title'], $title);
+					$coupon_info = $this->model_extension_shipping_shiptor->getCoupon($title[1]);
+					$discount = (int)$coupon_info['discount'];
+				}else{
+					$coupon_info = array();
+				}
+
+				foreach ($products as $product) {
+					$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+					$shopArticle = '';
+					$price = $product['price'];
+					if(!empty($coupon_info) && $discount > 0){
+						if($coupon_info['type'] == 'P'){
+							$price = $price*$discount/100;
+						}elseif($coupon_info['type'] == 'F'){
+							if($product['quantity'] > 1){
+								if(($price*$product['quantity']) > $discount){
+									$price = (($price*$product['quantity']) - $discount)/$product['quantity'];
+									$discount = 0;
+								}else{
+									$discount = $discount - ($price*$product['quantity']);
+									$price = 0;
+								}
+							}else{
+								if($price > $discount){
+									$price = $price - $discount;
+									$discount = 0;
+								}else{
+									$discount = $discount - $price;
+									$price = 0;
+								}
+							}
+						}
+					}
+					
+					if(($this->config->get('shipping_shiptor_id_product')) && (!empty($product_info['sku']))){
+						$shopArticle = $product_info['sku'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+							}
+						}
+					}elseif(($this->config->get('shipping_shiptor_id_product') == 0) && (!empty($product['model']))){
+						$shopArticle = $product['model'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+							}
+						}
+					}elseif(!empty($product['sku'])){
+						$shopArticle = $product_info['sku'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+							}
+						}
+					}else{
+						$shopArticle = $product['model'];
+						$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+						if(!empty($product_options)){
+							foreach($product_options as $option){
+								$shopArticle .= '-' . $option['value'];
+							}
+						}
+					}
+					
+					if (empty($product['quantity'])) {
+						$message['error']['product'] = $this->language->get('error_is_quantity');
+						continue;
+					}
+
+					if (empty($product['price'])) {
+						$message['error']['product'] = $this->language->get('error_is_price');
+						continue;
+					}
+
+					$params['products'][] = array(
+						'shopArticle' => $shopArticle,
+						'count'       => (int)$product['quantity'],
+						'price'       => round($price, $this->currency->getDecimalPlace($this->config->get('config_currency')))
+					);
+				}
+			}
+			
+			if (! $message) {
+				$shiptor = $this->shiptor->editPackage($params);
+
+				if (! empty($shiptor['id'])) {
+					$this->model_extension_shipping_shiptor->editOrder($order_id, array('shiptor_id' => $shiptor['id']));
+
+					$message['success'] = $this->language->get('success_shiptor');
+				} else {
+					$message['error']['shiptor'] = $this->language->get('error_is_shiptor');
+				}
+			}
+		} else {
+			$message['error']['order'] = $this->language->get('error_is_order');
+		}
+	}
+
+	/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+	<operation error="skip">
+	<search trim="true"><![CDATA[$this->model_checkout_order->editOrder($order_id, $order_data);]]></search>
+	<add position="after"><![CDATA[
+
+	/* Shiptor - агрегатор доставки */
+
+	if (isset($this->session->data['shiptor']['kladr_id'], $this->session->data['shiptor']['address']['courier_id'])) {
+		$this->load->model('extension/shipping/shiptor');
+
+		$this->model_extension_shipping_shiptor->setOrder($order_id);
+		
+		unset($this->session->data['shiptor']['address']);
+	}
+
+	/* Shiptor - агрегатор доставки */
+
+	]]></add>
+	</operation>
+</file>
+
+</modification>

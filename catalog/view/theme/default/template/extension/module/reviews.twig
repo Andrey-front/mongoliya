@@ -1,0 +1,121 @@
+{{ header }}
+<div id="category-blogs" class="container">
+	<ul class="breadcrumb">
+		{% for breadcrumb in breadcrumbs %}
+			<li>
+				<a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a>
+			</li>
+		{% endfor %}
+	</ul>
+	<div class="row">{{ column_left }}
+		{% if column_left and column_right %}
+			{% set class = 'col-sm-6' %}
+		{% elseif column_left or column_right %}
+			{% set class = 'col-sm-12' %}
+			{% set class = 'col-sm-9' %}
+		{% else %}
+			{% set class = 'col-sm-12' %}
+		{% endif %}
+		<div id="content" class="{{ class }}">{{ content_top }}
+			<h2 class="page_title title">{{heading_title}}</h2>
+			<div class="row">
+				<div class="col-sm-12 reviews-page-top">
+					<p class="reviews-page__desc">Мы ценим и публикуем каждый отзыв который вы оставляете с радостью принимая благодарностии внимательно изучая притензии, чтобы делать наш сервис еще лучше и качественнее</p>
+					<a href="#reviews-form" id="reviews" class="btn btn-primary reviews-page__link">Оставить отзыв</a>
+				</div>
+			</div>
+			<div class="row mt-2 reviews">
+				{% if reviews|length > 0 %}
+					{% for review in reviews %}
+						<div class="reviews-block col-xs-12">
+							<div class="reviews-carousel-top">
+								{% if review.photo %}
+									<img src="{{ review.photo }}" alt="{{ review.name}}" class="reviews-carousel__photo">
+								{% else %}
+									<div class="reviews-carousel__photo"></div>
+								{% endif %}
+								<div class="reviews-carousel-block reviews-carousel-block_page">
+									<ul class="reviews-carousel-info list-inline">
+										<li class="reviews-carousel__name">{{review.name}} \</li>
+										<li class="reviews-carousel__city">{{ review.city }}</li>
+										<li class="reviews-carousel__date">
+											<time itemprop="datePublished" class="blog-date" datetime="{{ review.created_at|date("m.d.Y", "Europe/Moscow") }}">{{ review.created_at|date("m.d.Y", "Europe/Moscow") }}</time>
+										</li>
+										<li class="reviews-carousel__mark">
+											{% for i in 1..5 %}
+												{% if review.mark >= i %}
+													<i class="fa fa-star reviews-carousel__star reviews-carousel__star_orange" aria-hidden="true"></i>
+												{% else %}
+													<i class="fa fa-star reviews-carousel__star" aria-hidden="true"></i>
+												{% endif %}
+
+											{% endfor %}
+										</li>
+									</ul>
+									<div class="blog-text">{{review.msg}}</div>
+								</div>
+							</div>
+						</div>
+					{% endfor %}
+				{% endif %}
+			</div>
+			{% if pagination %}
+				<div class="pro_pagination clearfix">
+					<div class="col-sm-6 text-right">{{ pagination }}</div>
+					<div class="col-sm-6 text-left">{{ results }}</div>
+				</div>
+			{% endif %}
+			{% if not reviews %}
+				<p>Еще нет ни одного отзыва</p>
+			{% endif %}
+		</div>
+		{{ column_right }}
+	</div>
+	{{ content_bottom }}
+</div>
+<!-- reviews modal form-->
+<div id="reviews-form" class="white-popup-block mfp-hide">
+	<form action="" method="post" enctype="multipart/form-data" id="form-review" class="form-horizontal form-review">
+		<fieldset>
+			<legend>Оставьте отзыв</legend>
+			<div class="form-group required">
+				<label class="control-label" for="name">ФИО:</label>
+				<input type="text" name="name" id="name" class="form-control" required>
+			</div>
+			<div class="form-group">
+				<label class="control-label" for="phone">Телефон::</label>
+				<input type="tel" name="phone" id="phone" placeholder="Телефон 7(___)___-__-__" pattern="7\([0-9]{3}\)[0-9]{3}-[0-9]{2}-[0-9]{2}" title="Введите телефон в формате 7(___)___-__-__" maxlength="15" class="form-control">
+			</div>
+			<div class="form-group required">
+				<label class="control-label" for="phone">Город::</label>
+				<input type="text" name="city" id="city" class="form-control" required>
+			</div>
+			<div class="form-group required">
+				<label class="control-label" for="msg">Отзыв</label>
+				<textarea name="msg" rows="5" id="msg" class="form-control" required></textarea>
+			</div>
+			<div class="form-group required">
+				<label for="photo" class="btn btn-primary" id="reviews-form__file">Выбрать файл</label>
+				<input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/gif,">
+				<div class="form-review__file"></div>
+			</div>
+			<div class="form-group required">
+				<label class="control-label" for="mark">Ваша оценка</label>
+				<select class="form-control" name="mark" id="mark" required>
+					<option value="">Ваша оценка</option>
+					{% for i in 1..5 %}
+						<option value="{{ i }}">{{ i }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="form-group required">
+				<label class="control-label" for="captcha">Введите код в поле ниже</label>
+				<input type="text" name="captcha" id="input-captcha" class="form-control" required>
+				<img src="index.php?route=extension/captcha/basic/captcha" alt="">
+			</div>
+			<p class="modal-response"></p>
+			<input class="btn btn-primary btn-lg btn-block" type="submit" id="moda-submit" value="Отправить">
+		</fieldset>
+	</form>
+</div>
+{{ footer }}

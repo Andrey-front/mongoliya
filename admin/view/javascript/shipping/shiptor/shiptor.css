@@ -1,0 +1,27 @@
+.sh-flex
+{ display: flex; align-items: center  }
+.sh-flex .sh-help
+{font-size: 11px;color: #356caa;}
+.form-horizontal .sh-flex .control-label
+{ padding-top: 0 !important;margin: 0; text-align: left;}
+.sh-relative
+{ position: relative; }
+.sh-remove
+{position: absolute;top: 0;right: 15px;}
+.onoffswitch
+{ position: relative; width: 50px; -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none; }
+.onoffswitch-checkbox
+{ display: none; }
+.onoffswitch-label 
+{ display: block; overflow: hidden; cursor: pointer; height: 30px; padding: 0; line-height: 30px; border-radius: 50px; background-color: #f56b6b; transition: background-color 0.3s ease-in; }
+.onoffswitch-label:before 
+{ content: ""; display: block; width: 30px; margin: 0; background: #FFFFFF; position: absolute; top: 0; bottom: 0; right: 3px; left: 0; border: 2px solid #f56b6b; border-radius: 50%; transition: all 0.3s ease-in 0s; }
+.onoffswitch-checkbox:checked + .onoffswitch-label 
+{ background-color: #3BB033; }
+.onoffswitch-checkbox:checked + .onoffswitch-label:before 
+{ border-color: #3BB033; left: 20px; right: auto; transition: all 0.3s ease-in 0s; }
+.increase{margin-left: -150px;position: absolute;}
+.status-on a{color: #1e91cf;}
+.status-off a{color: #3b4246;}
+.help_authorization{color: #70cdff;text-decoration: underline;}
+.form-group .alert{    font-size: 18px; color: red;  font-weight: bold;}

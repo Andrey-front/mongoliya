@@ -1,0 +1,108 @@
+<div class="main-category left-column-main-category">
+    <div class="vertical-category-wrapper navbar-collapse navbar-ex2-collapse">
+        <div class="vertical-category">
+            <ul class="category-list nav navbar-nav"> 
+                {% for categories in category %} 
+                {% if categories.level_2 %}
+                <li class="menu-item dropdown">
+                    <a href="{{ categories.href }}" class="dropdown-toggle">
+                        {% if categories.img %}
+                            <span class="icon-menu"><img  src="{{ categories.img }}" alt="shop"/></span>
+                        {% endif %}
+                        {{ categories.name }}
+                    </a>
+                    {% if categories.column >= 2 %}
+                        <div class="dropdown-menu dropdown-wrapper">
+                            <div class="dropdown-inner">
+                                <ul class="list-unstyled megamenu-dropdown column{{ categories.column }}">
+                                    {% for child_category in categories.level_2 %}
+                                    <li class="menu-item {% if child_category.level_3 %}dropdown{% endif %}">
+                                        <a href="{{ child_category.href }}" class="dropdown-toggle">{{ child_category.name }}</a>
+                                        {% if child_category.level_3 %}
+                                        <div class="dropdown-menu">
+                                            <div class="dropdown-inner">
+                                                <ul class="list-unstyled childs_1">
+                                                    {% for child_child_category in child_category.level_3 %} 
+                                                    <li class="menu-item {% if child_child_category.level_4 %}dropdown{% endif %}">
+                                                        <a href="{{ child_child_category.href }}">{{ child_child_category.name }}</a>
+                                                        {% if child_child_category.level_4 %}
+                                                        <div class="dropdown-menu">
+                                                            <div class="dropdown-inner">
+                                                                <ul class="list-unstyled">
+                                                                    {% for child_child_child_category in child_child_category.level_4 %} 
+                                                                    <li class="menu-item">
+                                                                        <a href="{{ child_child_child_category.href }}" class="dropdown-toggle">{{ child_child_child_category.name }}</a>
+                                                                    </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </li> 
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="dropdown-menu single-dropdown">
+                            <div class="dropdown-inner">
+                                <ul class="list-unstyled megamenu-dropdown">
+                                    {% for child_category in categories.level_2 %} 
+                                    <li class="menu-item {% if child_category.level_3 %}dropdown{% endif %}">
+                                        <a href="{{ child_category.href }}" class="dropdown-toggle single-dropdown1">{{ child_category.name }}</a>
+                                        {% if child_category.level_3 %}
+                                        <div class="dropdown-menu">
+                                            <div class="dropdown-inner">
+                                                <ul class="list-unstyled megamenu-dropdown">
+                                                    {% for child_child_category in child_category.level_3 %} 
+                                                    <li class="menu-item {% if child_child_category.level_4 %}dropdown{% endif %}">
+                                                        <a href="{{ child_child_category.href }}" class="dropdown-toggle">{{ child_child_category.name }}</a>
+                                                        {% if child_child_category.level_4 %}
+                                                        <div class="dropdown-menu">
+                                                            <div class="dropdown-inner">
+                                                                <ul class="list-unstyled">
+                                                                    {% for child_child_child_category in child_child_category.level_4 %} 
+                                                                    <li class="menu-item">
+                                                                        <a href="{{ child_child_child_category.href }}" class="dropdown-toggle">
+                                                                        {{ child_child_child_category.name }}
+                                                                        </a>
+                                                                    </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>                                  
+                                        {% endif %}
+                                    </li>                                  
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>                        
+                    {% endif %}
+                </li>
+                {% else %}
+                <li class="menu-item">
+                    <a href="{{ categories.href }}">
+                        {% if categories.img %}
+                            <span class="icon-menu"><img  src="{{ categories.img }}" alt="shop"/></span>
+                        {% endif %}
+                        {{ categories.name }}
+                    </a>
+                </li>
+                {% endif %}  
+                {% endfor %}
+            </ul> 
+        </div>
+    </div>
+</div>

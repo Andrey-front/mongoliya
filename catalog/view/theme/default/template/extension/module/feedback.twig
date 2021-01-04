@@ -1,0 +1,25 @@
+<a class="top-links__callback" href="#" data-toggle="modal" data-target="#feedbackModal">Заказать звонок</a>
+<!-- Modal feedbackModal-->
+<div class="modal fade" tabindex="-1" id="feedbackModal" role="dialog" 
+aria-labelledby="feedbackModalLabel">
+  <div class="modal-dialog">
+    <div class="modal-content feedback-modal">
+      <button type="button" class="close feedback-modal__close" data-dismiss="modal" aria-hidden="true">&times;</button>
+      <div class="modal-header feedback-modal__header" id="head">
+        <p class="modal-title feedback-modal__caption" id="title">заказать звонок</p>
+      </div><!-- /.modal-header -->
+      <div class="modal-body feedback-modal__body">
+        <form class="modal-form form-horizontal" action="" method="post">
+	        <div class="form-group feedback-modal__block">
+		        <input type="tel" name="phone" placeholder="Ваш телефон"
+		               class="form-control modal-form__input" required>
+	        </div>
+	        <div class="form-group feedback-modal__block">
+		        <input type="submit" value="Заказать" class="modal-form__submit">
+	        </div>
+        </form>
+        <p class="feedback-modal__response test-center"></p>
+      </div><!-- /.modal-body -->
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div> <!-- /container modal -->

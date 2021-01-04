@@ -1,0 +1,15 @@
+.articles-useful {
+  &__name {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 23px;
+  }
+
+  &__desc {
+    margin: 12px 0 32px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 14px;
+
+  }
+}

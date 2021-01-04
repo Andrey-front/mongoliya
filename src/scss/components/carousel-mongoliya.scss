@@ -1,0 +1,84 @@
+.carousel-mongoliya {
+  margin-bottom: 14px;
+  color: white;
+
+  &__item {}
+
+  &__wrap {
+    position: relative;
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: cover;
+    height: 700px;
+  }
+
+  &__inner {
+    position: absolute;
+    top: 25%;
+    background: rgba(68, 33, 30, .75);
+  }
+
+  &__caption {
+    font-size: 47px;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  &__text {
+    padding-top: 12px;
+    padding-bottom: 35px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 21px;
+  }
+}
+
+@media (min-width: 320px) {
+
+  .carousel-mongoliya {
+    &__inner {
+      left: 5%;
+      padding: 100px 5%;
+    }
+
+    &__caption {
+      font-size: 27px;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .carousel-mongoliya {
+    &__inner {
+      padding: 100px 5%;
+    }
+    &__caption {
+      font-size: 37px;
+    }
+  }
+}
+
+@media (min-width: 992px) {
+  .carousel-mongoliya {
+    &__inner {
+      left: 17%;
+      max-width: 70%;
+      padding: 100px 6%;
+    }
+
+    &__caption {
+      font-size: 47px;
+    }
+  }
+}
+
+@media (min-width: 1900px) {
+  .carousel-mongoliya {
+    &__inner {
+      left: 27%;
+      padding: 100px 10%;
+      max-width: 50%;
+    }
+  }
+}

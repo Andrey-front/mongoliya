@@ -1,0 +1,1064 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+<name>Shiptor - Агрегатор служб доставки</name>
+<version>3.3.1</version>
+<author>Kuznetsov Bogdan</author>
+<link>https://shiptor.ru</link>
+<code>shiptor_default_opencart</code>
+
+<file path="catalog/controller/account/address.php">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[$this->document->addStyle('catalog/view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.css');]]></search>
+		<add position="after"><![CDATA[
+			/* Shiptor - агрегатор доставки */
+			$this->document->addStyle('catalog/view/javascript/shipping/shiptor.css');
+			$this->document->addStyle('catalog/view/javascript/shipping/kladr/css/jquery.kladr.min.css');
+			$this->document->addScript('catalog/view/javascript/shipping/kladr/js/jquery.kladr.min.js');	
+			$this->document->addScript('catalog/view/javascript/shipping/shiptor.js');
+			/* Shiptor - агрегатор доставки */
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/controller/account/register.php">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[$this->document->addStyle('catalog/view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.css');]]></search>
+		<add position="after"><![CDATA[
+			/* Shiptor - агрегатор доставки */
+			$this->document->addStyle('catalog/view/javascript/shipping/shiptor.css');
+			$this->document->addStyle('catalog/view/javascript/shipping/kladr/css/jquery.kladr.min.css');
+			$this->document->addScript('catalog/view/javascript/shipping/kladr/js/jquery.kladr.min.js');	
+			$this->document->addScript('catalog/view/javascript/shipping/shiptor.js');
+			/* Shiptor - агрегатор доставки */
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/controller/checkout/checkout.php">
+<operation error="skip">
+		<search trim="true"><![CDATA[public function index() {]]></search>
+		<add position="after"><![CDATA[
+		/* Shiptor - агрегатор доставки */
+
+		if(empty($this->request->post) && ($this->config->get('progroman_cm_status'))){
+			$this->session->data['validate_kladr'] = 1;	
+		}else{
+			$this->session->data['validate_kladr'] = 0;	
+		}
+		
+		/* Shiptor - агрегатор доставки */
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[class ControllerCheckoutCheckout extends Controller {]]></search>
+		<add position="after"><![CDATA[
+		/* Shiptor - агрегатор доставки */
+		
+		public function __construct($registry) {
+			parent::__construct($registry);
+			
+			$registry->set('shiptor', new Shiptor($registry));
+		}
+		
+		public function getKladrId($address = array()){
+		
+			if(!empty($address['zone_id'])){
+				$this->load->model('localisation/zone');
+				$zone = $this->model_localisation_zone->getZone($address['zone_id']);
+				$zone = mb_strtolower($zone['name']);
+				$zone = trim(str_replace($this->cleanAreas,'',$zone));
+			}
+			
+			$results = $this->shiptor->suggestSettlement(array('query' => trim($address['city']),'country_code'=> isset($address['iso_code_2']) ? $address['iso_code_2'] : "RU"));
+			$searchCity = strtolower($address['city']);
+			$result = false;
+			foreach($results as $suggest){
+				if($result==false && $searchCity==strtolower($suggest['name'])){
+					if($suggest['readable_parents']!=''){
+						return $suggest;
+					}
+					else {
+						if(isset($zone) && trim(mb_strtolower($suggest['name']))==$zone)return $suggest;
+						else {
+							if(!isset($zone))return $suggest;
+						}
+					}
+				}
+			}
+			return $result;
+		}
+		
+		/* Shiptor - агрегатор доставки */
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[$this->document->addStyle('catalog/view/javascript/jquery/datetimepicker/bootstrap-datetimepicker.min.css');]]></search>
+		<add position="after"><![CDATA[
+		
+		/* Shiptor - агрегатор доставки */
+		
+		$this->load->model('extension/shipping/shiptor');
+		
+		if (!$this->customer->isLogged()) {
+			if((!empty($this->session->data['shipping_address']['city']) && ($this->session->data['validate_kladr'] == 1)) || (!empty($this->session->data['shipping_address']['city']) && !isset($this->session->data['shiptor']['kladr_id']))){
+				
+					$kladr = $this->getKladrId($this->session->data['shipping_address']);
+					
+					if(isset($kladr['kladr_id'])){
+						$this->session->data['shiptor']['kladr_id'] = $kladr['kladr_id'];
+					}else{
+						unset($this->session->data['shiptor']['kladr_id']);
+					}
+
+					/* Если есть город по умолчанию выставляем ему регион*/
+					if(isset($this->session->data['shipping_address']['iso_code_2'])){
+						$params['country_code'] = $this->session->data['shipping_address']['iso_code_2'];
+					}
+					$params['query'] = $this->session->data['shipping_address']['city'];
+					$results = $this->shiptor->suggestSettlement($params);
+					
+					$searchCity = strtolower($this->session->data['shipping_address']['city']);
+					
+					foreach($results as $suggest){
+						if($searchCity==strtolower($suggest['name'])){
+							if($suggest['readable_parents']!=''){
+								$query_region = $this->db->query("SELECT zone_id FROM " . DB_PREFIX . "zone WHERE name = '" . $suggest['readable_parents'] . "' AND status = '1'");
+								if ($query_region->num_rows) {
+									$this->session->data['shipping_address']['zone_id'] = $query_region->row['zone_id'];
+								}
+							}
+						}
+					}
+					if(!isset($this->session->data['shiptor']['kladr_id'])){
+						$this->session->data['shipping_address']['city'] = 'Москва';
+						$query = $this->db->query("SELECT zone_id FROM " . DB_PREFIX . "zone WHERE name = '" . $this->session->data['shipping_address']['city'] . "' AND status = '1'");
+						
+						$this->session->data['shipping_address']['zone_id'] = $query->row['zone_id'];
+						
+						$kladr_else = $this->getKladrId($this->session->data['shipping_address']);
+						
+						$this->session->data['payment_address'] = $this->session->data['shipping_address'];
+						$this->session->data['shiptor']['kladr_id'] = $kladr_else['kladr_id'];
+					}
+			}else{
+				
+				/* Если пустой город ставим "Москва" */
+				$query_country = $this->db->query("SELECT country_id FROM " . DB_PREFIX . "country WHERE iso_code_2 = 'RU'");
+				$this->session->data['shipping_address']['city'] = 'Москва'; 
+				$this->session->data['shipping_address']['country_id'] = $query_country->row['country_id'];
+				
+				$query = $this->db->query("SELECT zone_id FROM " . DB_PREFIX . "zone WHERE name = '" . $this->session->data['shipping_address']['city'] . "' AND status = '1'");
+				
+				$this->session->data['shipping_address']['zone_id'] = $query->row['zone_id'];
+				
+				$kladr = $this->getKladrId($this->session->data['shipping_address']);
+				
+				$this->session->data['payment_address'] = $this->session->data['shipping_address'];
+				$this->session->data['shiptor']['kladr_id'] = $kladr['kladr_id'];
+			
+			}
+		}
+		
+		define('HTTPS_CATALOG', HTTPS_SERVER);
+		
+		if ($this->config->get('shipping_shiptor_auto_send')) {
+			if(!$this->config->get('shipping_shiptor_time_auto')){
+				$this->model_extension_shipping_shiptor->updateTimeAuto();
+			}elseif($this->config->get('shipping_shiptor_time_auto') < time()){
+				$this->model_extension_shipping_shiptor->updateTimeAuto();
+				
+				if($this->config->get('shipping_shiptor_validate_period')){
+					$pack_orders = $this->model_extension_shipping_shiptor->getDateOrders($this->config->get('shipping_shiptor_validate_period'));
+					$this->model_extension_shipping_shiptor->getDateOrdersCourierGroup($this->config->get('shipping_shiptor_validate_period'));
+				}else{
+					$pack_orders = $this->model_extension_shipping_shiptor->getDateOrders(604800);
+					$this->model_extension_shipping_shiptor->getDateOrdersCourierGroup(604800);
+				}
+				
+				if(!empty($pack_orders)){
+					foreach($pack_orders as $order){
+						$json = array();
+						
+						$order_id = $order['order_id'];
+				
+						$params = array();
+							
+						$params['external_id'] = $order_id;
+						
+						$order = $this->model_extension_shipping_shiptor->getOrderEditShiptor($order_id);
+
+						$params['delivery_time'] = $order['time'];
+
+						$weight = trim($order['weight']);
+
+						if ($weight && is_numeric($weight)) {
+							$params['weight'] = (float)$weight;
+						}
+
+						$shipping_method = trim($order['shipping_method']);
+
+						if ($shipping_method && is_numeric($shipping_method)) {
+							$params['shipping_method'] = $shipping_method;
+						} else {
+							$json['error']['shipping'] = $this->language->get('error_is_shipping') . '. Номер заказа: ' . $order_id;
+						}
+							
+						if(stristr($order['shipping_code'],'shiptor.russian-post-') && $order['lastname']==''){
+							$json['error']['shipping'] = $this->language->get('error_is_surname') . '. Номер заказа: ' . $order_id;
+						}
+
+						$delivery_point = trim($order['delivery_point']);
+
+						if ($delivery_point) {
+							$params['delivery_point'] = $delivery_point;
+						} else {
+							if ($order['street']) {
+								$params['street'] = trim($order['street']);
+							} else if ($order['shipping_address_1']) {
+								$this->model_extension_shipping_shiptor->editOrder($order_id, array('street' => trim($order['shipping_address_1'])));
+
+								$params['street'] = trim($order['shipping_address_1']);
+							}
+
+							if ($order['house']) {
+								$params['house'] = trim($order['house']);
+							}
+
+							if ($order['apartment']) {
+								$params['apartment'] = trim($order['apartment']);
+							}
+								
+							if ($order['shipping_postcode']) {
+								$params['postal_code'] = trim($order['shipping_postcode']);
+							}
+						}
+
+						if ($order['firstname']) {
+							$params['name'] = $order['firstname'];
+						}
+
+						if ($order['lastname']) {
+							$params['surname'] = $order['lastname']!=''?$order['lastname']:$order['firstname'];
+						}
+						else{
+							$params['surname'] = $order['firstname'];
+						}
+
+						$email = utf8_strtolower(trim($order['email']));
+
+						if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+							$params['email'] = $email;
+						} else {
+							$json['error']['email'] = $this->language->get('error_is_email') . '. Номер заказа: ' . $order_id;
+						}
+
+						if ($order['telephone']) {
+							if (preg_match('/^(\s*)?(\+)?([- _():=+]?\d[- _():=+]?){10,14}(\s*)?$/ui', $order['telephone'])) {
+								$params['phone'] = trim($order['telephone']);
+							} else {
+								$json['error']['telephone'] = $this->language->get('error_is_telephone') . '. Номер заказа: ' . $order_id;
+							}
+						}
+
+						$kladr_id = trim($order['kladr_id']);
+
+						if ($kladr_id) {
+							$params['kladr_id'] = $kladr_id;
+						} else {
+							$json['error']['kladr_id'] = $this->language->get('error_is_kladr') . '. Номер заказа: ' . $order_id;
+						}
+
+						// вычисляем наложенный платеж и объявленную стоимость
+
+						if ($order['total']) {
+							$params['declared_cost'] = round($order['total'], $this->currency->getDecimalPlace($this->config->get('config_currency')));
+
+							$params['cod'] = (false !== strpos($order['payment_code'], 'shiptor_')) ? round($order['total'], $this->currency->getDecimalPlace($this->config->get('config_currency'))) : 0;
+						}
+
+						if ($order['payment_code'] == 'shiptor_paycard') {
+							$params['cashless_payment'] = 1;
+						}
+							
+						// Пока отправляем только RU
+						if ($order['country']) {
+							$params['country_code'] = $order['country'];
+						}
+							
+						if ($order['shipping_zone']) {
+							$params['administrative_area'] = $order['shipping_zone'];
+						}
+							
+						if ($order['shipping_city']) {
+							$params['settlement'] = $order['shipping_city'];
+						}
+
+						// проверка наличия услуги с артикулом магазина (если нет - создаем)
+						// артикул = url сайта
+						
+						$shop_article = mb_substr(HTTPS_CATALOG, 0, 64);
+
+						if (!$this->shiptor->checkServiceByArticle($shop_article)) {
+							$data = array('name' => $this->language->get('text_shipping'), 'shopArticle' => $shop_article, 'price' => 0);
+							$this->shiptor->addService($data);
+						}
+
+						if ($products = $this->model_extension_shipping_shiptor->productsOrder($order_id)) {
+							$this->load->model('catalog/product');
+
+							// передаем номенклатуру
+
+							foreach ($products as $product) {
+								$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+								
+								// TODO: проверить, откуда данные - из product или product_info
+								$shopArticle = '';
+								$name = $product['name'];
+								if(($this->config->get('shipping_shiptor_id_product')) && (!empty($product_info['sku']))){
+									$shopArticle = $product_info['sku'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+											$name .= '-' . $option['value'];
+										}
+									}
+								}elseif(($this->config->get('shipping_shiptor_id_product') == 0) && (!empty($product['model']))){
+									$shopArticle = $product['model'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+											$name .= '-' . $option['value'];
+										}
+									}
+								}elseif(!empty($product['sku'])){
+									$shopArticle = $product_info['sku'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+											$name .= '-' . $option['value'];
+										}
+									}
+								}else{
+									$shopArticle = $product['model'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+											$name .= '-' . $option['value'];
+										}
+									}
+								}
+
+								$product_shiptor_params = array(
+									'name'          => $name,
+									'article'       => empty($product['sku']) ? '' : $product['sku'],
+									'shopArticle'   => $shopArticle,
+									'length'		=> empty($product['length']) ? '' : $this->length->convert($product['length'], 1, 1),
+									'width'         => empty($product['width']) ? '' : $this->length->convert($product['width'],  1, 1),
+									'height'        => empty($product['height']) ? '' : $this->length->convert($product['height'], 1, 1),
+									'weight'        => empty($product['weight']) ? '' : $this->length->convert($product['weight'], 1, 1),
+									'price'         => round($product['price'], $this->currency->getDecimalPlace($this->config->get('config_currency'))),
+								);
+								
+								$this->shiptor->addProduct($product_shiptor_params);
+							}
+
+							// если товар один, и указаны его размеры - берем их
+							// если товар один, и размеров нет - ставим нули, в библиотеке подставятся дефолтные размеры
+							// если товаров несколько - пропускаем блок, в библиотеке подставятся дефолтные размеры
+
+							if($this->config->get('shipping_shiptor_size')){
+								$params['width'] = $this->config->get('shipping_shiptor_default_width');
+								$params['length'] = $this->config->get('shipping_shiptor_default_length');
+								$params['height'] = $this->config->get('shipping_shiptor_default_height');
+							}elseif (1 == sizeof($products)) {
+								$product = reset($products);
+								
+								if (1 == $product['quantity']) {
+									$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+									$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+									
+									if($params['width'] > 0){
+										$params['width'] = $params['width'];
+									}else{
+										$params['width'] = $this->config->get('shipping_shiptor_default_width');
+									}
+									
+									if($params['length'] > 0){
+										$params['length'] = $params['length'];
+									}else{
+										$params['length'] = $this->config->get('shipping_shiptor_default_length');
+									}
+									
+									if($params['height'] > 0){
+										$params['height'] = $params['height'];
+									}else{
+										$params['height'] = $this->config->get('shipping_shiptor_default_height');
+									}
+								}else{
+									$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+									$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+									if($params['width'] > 0){
+										$width = $params['width'];
+									}else{
+										$width = $this->config->get('shipping_shiptor_default_width');
+									}
+									
+									if($params['length'] > 0){
+										$length = $params['length'];
+									}else{
+										$length = $this->config->get('shipping_shiptor_default_length');
+									}
+									
+									if($params['height'] > 0){
+										$height = $params['height'];
+									}else{
+										$height = $this->config->get('shipping_shiptor_default_height');
+									}
+									
+									$array_max_volume_product[] = $height;
+									$array_max_volume_product[] = $length;
+									$array_max_volume_product[] = $width;
+									
+									$max_volume_product = max($array_max_volume_product);
+									$sumV = $height*$length*$width*$product['quantity'];
+									$sumVQ = pow($sumV, 1/3);
+									$sumVQ = ceil($sumVQ);
+									
+									if($sumVQ > $max_volume_product){
+										$params['height'] = $sumVQ;
+										$params['length'] = $sumVQ;
+										$params['width'] = $sumVQ;
+									}else{
+										$params['length'] = $max_volume_product;
+										$params['width'] = sqrt($sumV/$max_volume_product);
+										$params['height'] = sqrt($sumV/$max_volume_product);
+									}
+								}
+							}else{
+								$sumV = 0;
+								
+								foreach($products as $product){
+									$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+									$params = array_merge($params,$this->model_extension_shipping_shiptor->length($product_info));
+									
+									if($params['width'] > 0){
+										$width = $params['width'];
+									}else{
+										$width = $this->config->get('shipping_shiptor_default_width');
+									}
+									
+									if($params['length'] > 0){
+										$length = $params['length'];
+									}else{
+										$length = $this->config->get('shipping_shiptor_default_length');
+									}
+									
+									if($params['height'] > 0){
+										$height = $params['height'];
+									}else{
+										$height = $this->config->get('shipping_shiptor_default_height');
+									}
+									
+									$array_max_volume_product[] = $height;
+									$array_max_volume_product[] = $length;
+									$array_max_volume_product[] = $width;
+									
+									$sumV += $height*$length*$width*$product['quantity'];
+								}
+								
+								
+								$max_volume_product = max($array_max_volume_product);
+								
+								$height = 0;
+								$length = 0;
+								$width = 0;
+								
+								$sumVQ = pow($sumV, 1/3);
+								$sumVQ = ceil($sumVQ);
+								
+								if($sumVQ > $max_volume_product){
+									$params['height'] = $sumVQ;
+									$params['length'] = $sumVQ;
+									$params['width'] = $sumVQ;
+								}else{
+									$params['length'] = $max_volume_product;
+									$params['width'] = sqrt($sumV/$max_volume_product);
+									$params['height'] = sqrt($sumV/$max_volume_product);
+								}
+							}
+							
+							$params['length'] = ceil($params['length']);
+							$params['width'] = ceil($params['width']);
+							$params['height'] = ceil($params['height']);
+
+							# Cписок продуктов
+							$params['products'] = array();
+							
+							// Coupon
+							$order_total = $this->model_extension_shipping_shiptor->totalOrder($order_id);
+							if(!empty($order_total)){
+								preg_match('#\((.*?)\)#', $order_total['title'], $title);
+								$coupon_info = $this->model_extension_shipping_shiptor->getCoupon($title[1]);
+								$discount = (int)$coupon_info['discount'];
+							}else{
+								$coupon_info = array();
+							}
+
+							foreach ($products as $product) {
+								$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+								$shopArticle = '';
+								$price = $product['price'];
+								if(!empty($coupon_info) && $discount > 0){
+									if($coupon_info['type'] == 'P'){
+										$price = $price*$discount/100;
+									}elseif($coupon_info['type'] == 'F'){
+										if($product['quantity'] > 1){
+											if(($price*$product['quantity']) > $discount){
+												$price = (($price*$product['quantity']) - $discount)/$product['quantity'];
+												$discount = 0;
+											}else{
+												$discount = $discount - ($price*$product['quantity']);
+												$price = 0;
+											}
+										}else{
+											if($price > $discount){
+												$price = $price - $discount;
+												$discount = 0;
+											}else{
+												$discount = $discount - $price;
+												$price = 0;
+											}
+										}
+									}
+								}
+								
+								if(($this->config->get('shipping_shiptor_id_product')) && (!empty($product_info['sku']))){
+									$shopArticle = $product_info['sku'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+										}
+									}
+								}elseif(($this->config->get('shipping_shiptor_id_product') == 0) && (!empty($product['model']))){
+									$shopArticle = $product['model'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+										}
+									}
+								}elseif(!empty($product['sku'])){
+									$shopArticle = $product_info['sku'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+										}
+									}
+								}else{
+									$shopArticle = $product['model'];
+									$product_options = $this->model_extension_shipping_shiptor->productOptionsOrder($order_id, $product['order_product_id']);
+									if(!empty($product_options)){
+										foreach($product_options as $option){
+											$shopArticle .= '-' . $option['value'];
+										}
+									}
+								}
+								
+								if (empty($product['quantity'])) {
+									$json['error']['product'] = $this->language->get('error_is_quantity') . '. Номер заказа: ' . $order_id;
+									continue;
+								}
+
+								if (empty($product['price'])) {
+									$json['error']['product'] = $this->language->get('error_is_price') . '. Номер заказа: ' . $order_id;
+									continue;
+								}
+
+								$params['products'][] = array(
+									'shopArticle' => $shopArticle,
+									'count'       => (int)$product['quantity'],
+									'price'       => round($price, $this->currency->getDecimalPlace($this->config->get('config_currency')))
+								);
+							}
+						}
+							
+						if (! $json) {
+							
+							$shiptor = $this->shiptor->addPackage($params);
+							if (! empty($shiptor)) {
+								
+							if($shiptor['status'] == 'new' && $this->config->get('shipping_shiptor_order_status_after_api_new') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_new'));
+							}elseif($shiptor['status'] == 'waiting-pickup' && $this->config->get('shipping_shiptor_order_status_after_api_waiting_pickup') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_waiting_pickup'));
+							}elseif($shiptor['status'] == 'waiting-send' && $this->config->get('shipping_shiptor_order_status_after_api_waiting_send') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_waiting_send'));
+							}elseif($shiptor['status'] == 'arrived-to-warehouse' && $this->config->get('shipping_shiptor_order_status_after_api_arrived_to_warehouse') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_arrived_to_warehouse'));
+							}elseif($shiptor['status'] == 'packed' && $this->config->get('shipping_shiptor_order_status_after_api_packed') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_packed'));
+							}elseif($shiptor['status'] == 'prepared-to-send' && $this->config->get('shipping_shiptor_order_status_after_api_prepared_to_send') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_prepared_to_send'));
+							}elseif($shiptor['status'] == 'sent' && $this->config->get('shipping_shiptor_order_status_after_api_sent') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_sent'));
+							}elseif($shiptor['status'] == 'delivered' && $this->config->get('shipping_shiptor_order_status_after_api_delivered') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_delivered'));
+							}elseif($shiptor['status'] == 'waiting-on-delivery-point' && $this->config->get('shipping_shiptor_order_status_after_api_waiting_on_delivery_point') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_waiting_on_delivery_point'));
+							}elseif($shiptor['status'] == 'removed' && $this->config->get('shipping_shiptor_order_status_after_api_removed') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_removed'));
+							}elseif($shiptor['status'] == 'returned' && $this->config->get('shipping_shiptor_order_status_after_api_returned') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_returned'));
+							}elseif($shiptor['status'] == 'reported' && $this->config->get('shipping_shiptor_order_status_after_api_reported') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_reported'));
+							}elseif($shiptor['status'] == 'lost' && $this->config->get('shipping_shiptor_order_status_after_api_lost') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_lost'));
+							}elseif($shiptor['status'] == 'resend' && $this->config->get('shipping_shiptor_order_status_after_api_resend') > 0){
+								$this->model_extension_shipping_shiptor->addOrderHistory($order_id, $this->config->get('shipping_shiptor_order_status_after_api_resend'));
+							}
+								
+								$this->model_extension_shipping_shiptor->editOrder($order_id, array('shiptor_id' => $shiptor['id']));			
+							}
+						}
+					}
+				}
+				
+			}
+		}
+
+		/* Shiptor - агрегатор доставки */
+		
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[$data['shipping_required']]]></search>
+		<add position="before"><![CDATA[
+
+		/* Shiptor - агрегатор доставки */
+		
+		$data['total_shiptor_total_status'] = $this->config->get('total_shiptor_total_status');
+
+		/* Shiptor - агрегатор доставки */
+
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[public function country() {]]></search>
+		<add position="before"><![CDATA[
+
+		/* Shiptor - агрегатор доставки */
+
+		public function first_pay() {
+		$json = array();
+
+		if(isset($this->session->data['shipping_address'])){
+			$this->load->model('setting/extension');
+			$results = $this->model_setting_extension->getExtensions('payment');
+			$total = $this->cart->getTotal();
+			
+			foreach ($results as $result) {
+				if ($this->config->get($result['code'] . '_status')) {
+					$this->load->model('extension/payment/' . $result['code']);
+
+					$method = $this->{'model_extension_payment_' . $result['code']}->getMethod($this->session->data['shipping_address'], $total);
+
+					if ($method) {
+						$pay_sort[] = array(
+							'sort_order'	=> ($this->config->get($result['code'] . '_sort_order')) ? $this->config->get($result['code'] . '_sort_order') : 0,
+							'code'			=> $result['code'],
+						);
+					}
+				} 
+			}
+		}	
+			
+		if(!isset($this->session->data['payment_method']['code'])){	
+			$data['pay'] = min($pay_sort);
+			$json['code'] = $data['pay']['code'];
+		}else{
+			$json['code'] = $this->session->data['payment_method']['code'];
+		} 
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+		
+		/* Shiptor - агрегатор доставки */
+
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/controller/checkout/confirm.php">
+	<operation error="skip">
+		<search trim="true"><![CDATA[$this->load->model('tool/upload');]]></search>
+		<add position="after"><![CDATA[
+
+		/* Shiptor - агрегатор доставки */
+		
+		$data['times'] = array();
+		
+		if ($this->config->get('shipping_shiptor_time') && isset($this->session->data['shipping_method']['code'])) {
+			$this->load->model('extension/shipping/shiptor');
+
+			$shipping = $this->model_extension_shipping_shiptor->getValidate($this->session->data['shipping_method']['code']);
+
+			if (! empty($shipping)) {
+				if ($shipping['courier'] == 'shiptor' && $shipping['shipping'] == 'A') {
+					$data['times'] = $this->shiptor->getDaysOff()?$this->shiptor->getDeliveryTime():array();
+
+					$data['terms'] = 0;
+					
+					if (isset($this->session->data['shiptor']['terms'])) {
+						$data['terms'] = $this->session->data['shiptor']['terms'];
+					}
+				}else{
+					unset($this->session->data['shiptor']['terms']);
+				}
+			}
+		}
+		
+		if(isset($this->session->data['order_id'])) {
+			$this->model_extension_shipping_shiptor->setOrder($this->session->data['order_id']);
+		}
+
+		/* Shiptor - агрегатор доставки */
+
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/controller/checkout/shipping_method.php">
+	<operation error="skip">
+	<search trim="true"><![CDATA[(!isset($this->request->post['shipping_method']))]]></search>
+	<add position="before"><![CDATA[
+	
+	/* Shiptor - агрегатор доставки */
+
+	$this->load->model('extension/shipping/shiptor');
+
+	if (isset($this->request->post['shipping_method']) && $shipping = $this->model_extension_shipping_shiptor->getValidate($this->request->post['shipping_method'])) {		
+		if ($shipping['shipping'] == 'P') {
+			if (! isset($this->session->data['shiptor']['address']['courier_id']) || ! isset($this->session->data['shiptor']['address']['point_id']) || (isset($this->session->data['shiptor']['address']['courier_id']) && $shipping['courier_id'] != $this->session->data['shiptor']['address']['courier_id'])) {
+				$json['error']['warning'] = $this->language->get('error_shipping_point');
+			}
+		} else if ($shipping['shipping'] == 'A') {	
+			unset($this->session->data['shiptor']['address']);
+			$this->session->data['shiptor']['address']['courier_id'] = $shipping['courier_id'];
+		} else {
+			unset($this->session->data['shiptor']);
+		}
+	} else {
+		unset($this->session->data['shiptor']);
+	}
+
+	/* Shiptor - агрегатор доставки */
+	
+	]]></add>
+	</operation>
+	
+	<operation error="skip">
+		<search trim="true"><![CDATA[public function save()]]></search>
+		<add position="before"><![CDATA[
+
+		/* Shiptor - агрегатор доставки */
+
+		/**
+		 * перерасчет доставки при выборе метода оплаты
+		 */
+
+		public function recalculate() {
+
+			if (!isset($this->request->post['payment_method'])
+			|| !isset($this->request->post['shipping_method'])
+			|| !isset($this->session->data['shipping_address'])
+			|| !isset($this->session->data['payment_methods'][$this->request->post['payment_method']])) return;
+
+			$this->load->language('checkout/checkout');
+			
+			// Shipping Methods
+			$method_data = array();
+			
+			$this->session->data['payment_method']['code'] = $this->request->post['payment_method'];
+
+			$this->load->model('setting/extension');
+
+			$results = $this->model_setting_extension->getExtensions('shipping');
+
+			foreach ($results as $result) {
+				if ($this->config->get('shipping_' . $result['code'] . '_status')) {
+					$this->load->model('extension/shipping/' . $result['code']);
+
+					$quote = $this->{'model_extension_shipping_' . $result['code']}->getQuote($this->session->data['shipping_address']);
+			
+					if ($quote) {
+						$method_data[$result['code']] = array(
+							'title'      => $quote['title'],
+							'quote'      => $quote['quote'],
+							'sort_order' => $quote['sort_order'],
+							'error'      => $quote['error'],
+							'description'	=> isset($quote['description'])?$quote['description']:''
+						);
+					}
+				}
+			}
+			
+			$sort_order = array();
+
+			foreach ($method_data as $key => $value) {
+				$sort_order[$key] = $value['sort_order'];
+			}
+
+			array_multisort($sort_order, SORT_ASC, $method_data);
+
+			$this->session->data['shipping_methods'] = $method_data;
+			
+			if(empty($method_data)) return;
+			
+			$shipping = explode('.', $this->request->post['shipping_method']);
+			
+			if (isset($method_data[$shipping[0]]) && isset($method_data[$shipping[0]]['quote'][$shipping[1]])) {
+				$this->session->data['shipping_method'] = $this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]];
+			}
+			
+			$data['text_shipping_method'] = $this->language->get('text_shipping_method');
+			$data['text_comments'] = $this->language->get('text_comments');
+			$data['text_loading'] = $this->language->get('text_loading');
+
+			$data['button_continue'] = $this->language->get('button_continue');
+
+			if (empty($this->session->data['shipping_methods'])) {
+				$data['error_warning'] = sprintf($this->language->get('error_no_shipping'), $this->url->link('information/contact'));
+			} else {
+				$data['error_warning'] = '';
+			}
+
+			if (isset($this->session->data['shipping_methods'])) {
+				$data['shipping_methods'] = $this->session->data['shipping_methods'];
+			} else {
+				$data['shipping_methods'] = array();
+			}
+
+			if (isset($this->session->data['shipping_method']['code'])) {
+				$data['code'] = $this->session->data['shipping_method']['code'];
+			} else {
+				$data['code'] = '';
+			}
+
+			if (isset($this->session->data['comment'])) {
+				$data['comment'] = $this->session->data['comment'];
+			} else {
+				$data['comment'] = '';
+			}
+
+			$this->response->setOutput($this->load->view('checkout/shipping_method', $data));
+		}
+
+		/* Shiptor - агрегатор доставки */
+
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/controller/common/footer.php">
+	<operation error="skip">
+		<search trim="true"><![CDATA[$this->load->view]]></search>
+		<add position="before"><![CDATA[
+
+		/* Shiptor - агрегатор доставки */
+
+		$this->document->addStyle('catalog/view/javascript/shipping/shiptor.css');
+		$this->document->addStyle('catalog/view/javascript/shipping/kladr/css/jquery.kladr.min.css');
+
+		$this->document->addScript('//api-maps.yandex.ru/2.1/?lang=ru_RU');
+		$this->document->addScript('//cdnjs.cloudflare.com/ajax/libs/jquery-scrollTo/2.1.2/jquery.scrollTo.min.js');
+		$this->document->addScript('catalog/view/javascript/shipping/kladr/js/jquery.kladr.min.js');	
+		$this->document->addScript('catalog/view/javascript/shipping/shiptor.js');
+
+		/* Shiptor - агрегатор доставки */
+
+		]]></add>
+	</operation>
+</file>
+
+<file path="catalog/language/*/checkout/checkout.php">	
+	<operation error="skip">
+	<search trim="true"><![CDATA[$_['error_custom_field']]]></search>
+	<add position="after"><![CDATA[
+	
+	/* Shiptor - агрегатор доставки */
+
+	$_['error_shipping_point'] = 'Выберете пункт назначение доставки!';
+
+	/* Shiptor - агрегатор доставки */
+	
+	]]></add>
+	</operation>
+</file>
+
+<file path="catalog/model/account/address.php">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[$address_id = $this->db->getLastId();]]></search>
+		<add position="after"><![CDATA[
+		$this->db->query('INSERT INTO `' . DB_PREFIX . 'shipping_shiptor_address` SET `address_id` = ' . (int)$address_id . ', `customer_id` = ' . (int)$this->customer->getId() . ', `kladr_id` = "' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '" ON DUPLICATE KEY UPDATE `customer_id` = ' . (int)$this->customer->getId() . ',`kladr_id` = "' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '"');
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[public function editAddress($address_id, $data) {]]></search>
+		<add position="after"><![CDATA[
+		$address_data = $this->getAddress($address_id);
+		if($address_data['city']!=$data['city'] || $address_data['zone_id']!=$data['zone_id'] || $address_data['country_id']!=$data['country_id']){
+			$this->db->query('INSERT INTO `' . DB_PREFIX . 'shipping_shiptor_address` SET `address_id` = ' . (int)$address_id . ', `customer_id` = ' . (int)$this->customer->getId() . ', `kladr_id` = "' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '" ON DUPLICATE KEY UPDATE `customer_id` = ' . (int)$this->customer->getId() . ',`kladr_id` = "' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '"');
+		}
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[public function deleteAddress($address_id) {]]></search>
+		<add position="after"><![CDATA[
+		$this->db->query("DELETE FROM " . DB_PREFIX . "shipping_shiptor_address WHERE address_id = '" . (int)$address_id . "' AND customer_id = '" . (int)$this->customer->getId() . "'");
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/model/account/customer.php">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[public function editAddressId($customer_id, $address_id) {]]></search>
+		<add position="after"><![CDATA[
+		$this->db->query('INSERT INTO `' . DB_PREFIX . 'shipping_shiptor_address` SET `address_id` = ' . (int)$address_id . ', `customer_id` = ' . (int)$customer_id . ', `kladr_id` = \'' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '\' ON DUPLICATE KEY UPDATE `customer_id` = ' . (int)$customer_id . ',`kladr_id` = "' . $this->db->escape($this->session->data['shiptor']['kladr_id']) . '"');
+		]]></add>
+	</operation>
+</file>
+
+<file path="catalog/view/theme/*/template/checkout/checkout.twig">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[$(document).delegate('#button-shipping-method']]></search>
+		<add position="before"><![CDATA[
+		
+		function recalculate_shipping() {
+			$.ajax({
+			url: 'index.php?route=checkout/checkout/first_pay',
+			type: 'post',
+			data: $('#collapse-shipping-address input[type=\'text\'], #collapse-shipping-address input[type=\'date\'], #collapse-shipping-address input[type=\'datetime-local\'], #collapse-shipping-address input[type=\'time\'], #collapse-shipping-address input[type=\'password\'], #collapse-shipping-address input[type=\'checkbox\']:checked, #collapse-shipping-address input[type=\'radio\']:checked, #collapse-shipping-address textarea, #collapse-shipping-address select'),
+			dataType: 'json',
+			success: function(json) {
+				var first_pay = (json.code.indexOf('shiptor_') !== -1) ? 'shiptor' : 'not_shiptor';
+				var cur_payment_method = first_pay;
+				var checked_method = $("input[name='payment_method']:checked").val();
+				
+				var method_group = (checked_method.indexOf('shiptor_') !== -1) ? 'shiptor' : 'not_shiptor';
+				// не пересчитываем в пределах одной группы методов оплаты
+				if (cur_payment_method == method_group) return;
+				cur_payment_method = method_group;
+				
+				var data = $("input[name='payment_method']:checked, input[name='shipping_method']:checked").serialize();
+
+				$.ajax({
+					url: 'index.php?route=checkout/shipping_method/recalculate',
+					dataType: 'html',
+					type: 'post',
+					data: data,
+					success: function(html) {
+						$('#collapse-shipping-method .panel-body').html(html);
+			
+						{% if total_shiptor_total_status %}
+						if($('#input-shipping-country').val() == '176'){
+							$('#remove-success').remove();
+							$('#collapse-shipping-method').parent().find('.panel-heading .panel-title').html('<a href="#collapse-shipping-method" data-toggle="collapse" data-parent="#accordion" class="accordion-toggle">{{ text_checkout_shipping_method }} <i class="fa fa-caret-down"></i></a>');
+		   
+							$('a[href=\'#collapse-shipping-method\']').trigger('click');
+							$('<div id="remove-success" style="margin-top:10px;" class="col-sm-12"><div class="alert alert-info alert-dismissible fade in" role="alert"><strong>Стоимость доставки изменилась!</strong></div></div>').insertBefore( "#collapse-shipping-method" );
+						}
+						{% endif %}
+					},
+					error: function(xhr, ajaxOptions, thrownError) {
+						alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+					}
+				});
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+			});
+		}
+		
+		]]></add>
+	</operation>
+	
+	<operation error="skip">
+		<search trim="true" index="3"><![CDATA[$('a[href=\'#collapse-payment-method\']').trigger('click');]]></search>
+		<add position="after"><![CDATA[
+
+		$('#remove-success').remove();
+		$('body').delegate("[name='payment_method']",'click', function() {
+			recalculate_shipping();
+		});
+
+		]]></add>
+	</operation>
+</file>
+<file path="catalog/view/theme/*/template/checkout/confirm.twig">	
+	<operation error="skip">
+	<search trim="true"><![CDATA[{{ payment }}]]></search>
+	<add position="before"><![CDATA[
+
+	{% if times %}
+	<!-- Shiptor - агрегатор доставки -->
+
+	<div class="row">
+	<div class="col-sm-12">
+	<div class="row">
+	<div class="pull-right">
+	<span id="shiptor-time"><span>Время доставки</span> 
+		<select onchange="Shiptor.time(this.value);" class="form-control">
+			<option value="0"> -- выберите время -- </option>	
+			{% for time,value in times %}
+			{% if time == terms %}
+			<option value="{{ time }}" selected="selected">{{ value }}</option>';
+			{% else %}
+			<option value="{{ time }}">{{ value }}</option>
+			{% endif %}
+			{% endfor %}
+		</select>
+	</span>
+	</div></div></div></div>	
+	
+	<!-- / Shiptor - агрегатор доставки -->
+	{% endif %}
+		
+	]]></add>
+	</operation>
+</file>
+<file path="catalog/view/theme/*/template/checkout/payment_method.twig">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[<label>{% if payment_method.code == code or not code %}]]></search>
+		<add position="replace"><![CDATA[<label>{% if payment_method.code == code %}]]></add>
+	</operation>
+</file>
+<file path="catalog/view/theme/*/template/checkout/shipping_method.twig">	
+	<operation error="skip">
+		<search trim="true"><![CDATA[<label>]]></search>
+		<add position="replace" index="1"><![CDATA[
+		<!-- Shiptor - агрегатор доставки -->
+		<label {% if quote.courier %}class="shiptor-courier"{% endif %}>
+		<!-- / Shiptor - агрегатор доставки -->
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[{{ quote.title }} - {{ quote.text }}</label>]]></search>
+		<add position="after"><![CDATA[
+		<!-- Shiptor - агрегатор доставки -->
+		{% if quote.description %}<label for="{{ quote.code }}" class="shipping-description">{{ quote.description }}</label>{% endif %}
+		<!-- / Shiptor - агрегатор доставки -->
+		]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[<input type="radio" name="shipping_method" value="{{ quote.code }}" checked="checked" />]]></search>
+		<add position="replace"><![CDATA[<input type="radio" {% if quote.courier is empty %}class="reload-courier"{% endif %} name="shipping_method" value="{{ quote.code }}" id="{{ quote.code }}" checked="checked" />]]></add>
+	</operation>
+	<operation error="skip">
+		<search trim="true"><![CDATA[<input type="radio" name="shipping_method" value="{{ quote.code }}" />]]></search>
+		<add position="replace"><![CDATA[<input type="radio" {% if quote.courier is empty %}class="reload-courier"{% endif %} name="shipping_method" value="{{ quote.code }}" id="{{ quote.code }}" />]]></add>
+	</operation>
+</file>
+
+</modification>
