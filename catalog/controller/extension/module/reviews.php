@@ -91,7 +91,7 @@ class ControllerExtensionModuleReviews extends Controller {
 				$data['photo'] .= '.'.$handle->file_src_name_ext;
 				$handle->file_new_name_body   = $strtotime;
 				$handle->image_resize         = true;
-				$handle->image_x              = 120;
+				$handle->image_x              = 152;
 				$handle->image_ratio_y        = true;
 				$handle->process(DIR_IMAGE.'catalog/reviews/');
 				$handle->processed;

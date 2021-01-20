@@ -19,14 +19,40 @@ body {
   border: 1px solid rgba(0, 0, 0, .125);
 }
 
+.page{
+  p{
+    margin-bottom: 20px;
+  }
+  &__image{
+    margin-bottom: 40px;
+  }
+  &__block{
+    display: block;
+  }
+}
+
 .page_title {
   display: block;
   margin: 35px auto 0;
   font-size: 24px;
   font-weight: 700;
   line-height: 28px;
+  
+  &_inner{
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 22px;
+  }
 }
 
+.page__link{
+  text-decoration: underline;
+  color: #337ab7;
+  
+  &_block{
+    display: block;
+  }
+}
 .subtitle {
   font-size: 22px;
   font-weight: 700;
@@ -54,6 +80,21 @@ body {
   padding: 20px 0;
 }
 
+.page__description{
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 19px;
+  text-align: center;
+}
+
+.page-block{
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.form-control {
+  border-style: solid;
+}
 @media (min-width: 992px) {
   .page-desc {
     padding: 0 20%;
@@ -61,5 +102,9 @@ body {
 
   .block {
     margin-bottom: 60px;
+  }
+  .page__description{
+    margin: 0 20%;
+    padding-bottom: 30px;
   }
 }

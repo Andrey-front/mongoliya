@@ -1,0 +1,45 @@
+.delivery{
+    background-color:  #F1F1F1;
+    &__tel{
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 21px;
+        i{
+            color: var(--primary-hover-color);
+            margin-right: 10px;
+            font-size: 22px;
+            vertical-align: middle;
+        }
+    }
+    &__list{
+        position: relative;
+        padding-left: 26px;
+        padding-bottom: 15px;
+        &:before{
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 12px;
+            width: 16px;
+            height: 16px;
+            background: url('../image/clock.svg') no-repeat center;
+        }
+    }
+    &-mute{
+        margin: 20px 0;
+        p{
+            margin-bottom: 0;
+            font-size: 12px;
+        }
+    }
+    &__listwithnumber{
+        font-size: 16px;
+        li{
+            margin-bottom: 5px;
+        }
+        strong{
+            color: var(--primary-hover-color);
+            font-weight: 700;
+        }
+    }
+}

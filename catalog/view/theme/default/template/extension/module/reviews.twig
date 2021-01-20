@@ -77,22 +77,23 @@
 <div id="reviews-form" class="white-popup-block mfp-hide">
 	<form action="" method="post" enctype="multipart/form-data" id="form-review" class="form-horizontal form-review">
 		<fieldset>
-			<legend>Оставьте отзыв</legend>
+			<legend class="text-center page_title">Оставьте отзыв</legend>
 			<div class="form-group required">
-				<label class="control-label" for="name">ФИО:</label>
-				<input type="text" name="name" id="name" class="form-control" required>
+				<input type="text" name="name" id="name" class="form-control"
+				placeholder="Введите ваше имя" required>
 			</div>
 			<div class="form-group">
-				<label class="control-label" for="phone">Телефон::</label>
-				<input type="tel" name="phone" id="phone" placeholder="Телефон 7(___)___-__-__" pattern="7\([0-9]{3}\)[0-9]{3}-[0-9]{2}-[0-9]{2}" title="Введите телефон в формате 7(___)___-__-__" maxlength="15" class="form-control">
+				<input type="tel" name="phone" id="phone" placeholder="Телефон 7(___)___-__-__" 
+				pattern="7\([0-9]{3}\)[0-9]{3}-[0-9]{2}-[0-9]{2}" title="Введите телефон в формате 7(___)___-__-__" 
+				maxlength="15" class="form-control">
 			</div>
 			<div class="form-group required">
-				<label class="control-label" for="phone">Город::</label>
-				<input type="text" name="city" id="city" class="form-control" required>
+				<input type="text" name="city" id="city" class="form-control" 
+				placeholder="Введите ваш город" required>
 			</div>
 			<div class="form-group required">
-				<label class="control-label" for="msg">Отзыв</label>
-				<textarea name="msg" rows="5" id="msg" class="form-control" required></textarea>
+				<textarea name="msg" rows="5" id="msg" class="form-control" 
+				placeholder="Введите ваш отзыв" required></textarea>
 			</div>
 			<div class="form-group required">
 				<label for="photo" class="btn btn-primary" id="reviews-form__file">Выбрать файл</label>
@@ -100,7 +101,6 @@
 				<div class="form-review__file"></div>
 			</div>
 			<div class="form-group required">
-				<label class="control-label" for="mark">Ваша оценка</label>
 				<select class="form-control" name="mark" id="mark" required>
 					<option value="">Ваша оценка</option>
 					{% for i in 1..5 %}
@@ -109,12 +109,13 @@
 				</select>
 			</div>
 			<div class="form-group required">
-				<label class="control-label" for="captcha">Введите код в поле ниже</label>
-				<input type="text" name="captcha" id="input-captcha" class="form-control" required>
 				<img src="index.php?route=extension/captcha/basic/captcha" alt="">
+				<input type="text" name="captcha" id="input-captcha" class="form-control" required>
 			</div>
 			<p class="modal-response"></p>
-			<input class="btn btn-primary btn-lg btn-block" type="submit" id="moda-submit" value="Отправить">
+			<div class="form-group required">
+				<input class="btn btn-primary btn-lg reviews-form__submit" type="submit" id="modal-submit" value="Отправить">
+			</div>
 		</fieldset>
 	</form>
 </div>

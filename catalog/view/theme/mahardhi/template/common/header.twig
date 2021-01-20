@@ -28,7 +28,6 @@
 	<script type="text/javascript" src="catalog/view/javascript/mahardhi/quickview.js"></script>	
 	<link href="catalog/view/theme/mahardhi/stylesheet/mahardhi/owl.carousel.min.css" rel="stylesheet">
 	<link href="catalog/view/theme/mahardhi/stylesheet/mahardhi/owl.theme.default.min.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="catalog/view/javascript/jquery/magnific/magnific-popup.css">
 	{# End #}
 
 	{% if advanceSearch %}
@@ -61,6 +60,51 @@
 	{% for analytic in analytics %}
 		{{ analytic }}
 	{% endfor %}
+	<style>
+	 .page__description {
+		font-size: 16px;
+		font-weight: 500;
+		line-height: 19px;
+		text-align: center;
+	}
+	@media (min-width: 992px) {
+		.page__description {
+			margin: 0 20%;
+			padding-bottom: 30px;
+		}
+	}
+	.page__image {
+		margin-bottom: 40px;
+	}
+	.page_title_inner {
+		margin-top: 0;
+		margin-bottom: 12px;
+	}
+	.page p {
+		margin-bottom: 20px;
+	}
+	.page__link {
+		text-decoration: underline;
+		color: #337ab7;
+	}
+	.page__link_block {
+		display: block;
+	}
+	.reviews-form__submit {
+		padding: 10px 70px;
+		font-size: 16px;
+		font-weight: 700;
+		line-height: 19px;
+	}
+	.mfp-close-btn-in .mfp-close {
+    	color: #e60001;
+		font-size: 40px;
+	}
+	.form-control {
+		border-style: solid;
+	}
+			
+	</style>
 </head>
 <body class="{{ class }}">
 	<div class="loader"></div>
